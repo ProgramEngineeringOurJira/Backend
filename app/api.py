@@ -1,15 +1,16 @@
 import logging
 import time
 
-from app.config import ClientAPISettings, client_api_settings
-from app.core import CommonException, InternalServerError, MongoManager, Redis
-from app.routers import __beanie_models__, list_of_routes
 from beanie import init_beanie
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.cors import CORSMiddleware
+
+from app.config import ClientAPISettings, client_api_settings
+from app.core import CommonException, InternalServerError, MongoManager, Redis
+from app.routers import __beanie_models__, list_of_routes
 
 logger = logger = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ def get_app() -> FastAPI:
     """
     Creates application and all dependable objects.
     """
-    description = """Сервис, реализующий Голосового помощника Hack-Bit"""
+    description = """Cервис реализующий backend jira"""
 
     application = FastAPI(
         title="jira",
