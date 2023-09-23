@@ -1,5 +1,6 @@
-from app.config import mongo_settings
 from motor.motor_asyncio import AsyncIOMotorClient
+
+from app.config import mongo_settings
 
 
 class MongoManager:
