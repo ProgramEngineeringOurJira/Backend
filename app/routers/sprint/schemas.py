@@ -20,7 +20,3 @@ class SprintCreation(BaseModel):
 class Sprint(Document, SprintCreation):
     workplace_id: UUID
     id: UUID = Field(default=uuid4())
-
-
-class SuccessfulResponse(BaseModel):
-    details: str = Field("Выполнено", title="Статус операции")

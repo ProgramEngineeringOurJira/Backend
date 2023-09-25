@@ -19,7 +19,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
 
 
 class RoleChecker:
-    def __init__(self, role: Role):
+    def __init__(self, role: list[Role]):
         self.role = role
 
     async def __call__(self, user: User = Depends(get_current_user), workplace_id: UUID = Path(...)) -> str:
@@ -30,11 +30,11 @@ class RoleChecker:
         )
         if workplace is not None and workplace.role in self.role:
             return user
-        raise ForbiddenException
+        raise ForbiddenException()
 
 
 # доступно только админу
-admin: RoleChecker = RoleChecker(Role.ADMIN)
+admin: RoleChecker = RoleChecker([Role.ADMIN])
 # доступно админам и членам
 member: RoleChecker = RoleChecker([Role.MEMBER, Role.GUEST])
 # доступно админам, членам и гостям

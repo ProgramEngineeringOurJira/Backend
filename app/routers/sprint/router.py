@@ -3,34 +3,41 @@ from uuid import UUID
 from app.auth.oauth2 import admin, guest
 from app.core.exceptions import SprintNotFoundError
 from app.routers.auth import User
+from app.routers.auth.schemas import SuccessfulResponse
 from fastapi import APIRouter, Body, Depends, Path, status
 
-from .schemas import Sprint, SprintCreation, SuccessfulResponse
+from .schemas import Sprint, SprintCreation
 
 router = APIRouter(tags=["Sprint"])
 
 
-@router.post("/{workplace_id}/createsprint", response_model=SuccessfulResponse, status_code=status.HTTP_200_OK)
-async def create(
+@router.post("/{workplace_id}/sprints", response_model=SuccessfulResponse, status_code=status.HTTP_201_CREATED)
+async def create_sprint(
     sprint_creation: SprintCreation = Body(...), workplace_id: UUID = Path(...), user: User = Depends(admin)
 ):
-    # TODO Проверить что существует workplace c id
-
     sprint = Sprint(**sprint_creation.model_dump(), workplace_id=workplace_id)
     await sprint.create()
     return SuccessfulResponse()
 
 
 @router.get("/{workplace_id}/sprints/{sprint_id}", response_model=Sprint, status_code=status.HTTP_200_OK)
-async def get(sprint_id: UUID = Path(...), user: User = Depends(guest)):
+async def get_sprint(sprint_id: UUID = Path(...), user: User = Depends(guest)):
     sprint = await Sprint.find(Sprint.id == sprint_id).first_or_none()
     if sprint is None:
         raise SprintNotFoundError("Такого спринта не найдено.")
     return sprint
 
 
+@router.get("/{workplace_id}/sprints", response_model=list[Sprint], status_code=status.HTTP_200_OK)
+async def get_sprints(workplace_id: UUID = Path(...), user: User = Depends(guest), skip: int = 0, limit: int = 20):
+    sprints = await Sprint.find_all(Sprint.workplace_id == workplace_id).skip(skip).limit(limit).to_list()
+    return sprints
+
+
 @router.put("/{workplace_id}/sprints/{sprint_id}", response_model=SuccessfulResponse, status_code=status.HTTP_200_OK)
-async def edit(sprint_creation: SprintCreation = Body(...), sprint_id: UUID = Path(...), user: User = Depends(admin)):
+async def edit_sprint(
+    sprint_creation: SprintCreation = Body(...), sprint_id: UUID = Path(...), user: User = Depends(admin)
+):
     sprint = await Sprint.find(Sprint.id == sprint_id).first_or_none()
     if sprint is None:
         raise SprintNotFoundError("Такого спринта не найдено.")
@@ -38,10 +45,10 @@ async def edit(sprint_creation: SprintCreation = Body(...), sprint_id: UUID = Pa
     return SuccessfulResponse()
 
 
-@router.delete("/{workplace_id}/sprints/{sprint_id}", response_model=SuccessfulResponse, status_code=status.HTTP_200_OK)
-async def delete(sprint_id: UUID = Path(...), user: User = Depends(admin)):
+@router.delete("/{workplace_id}/sprints/{sprint_id}", response_model=None, status_code=status.HTTP_204_NO_CONTENT)
+async def delete_sprint(sprint_id: UUID = Path(...), user: User = Depends(admin)):
     sprint = await Sprint.find(Sprint.id == sprint_id).first_or_none()
     if sprint is None:
         raise SprintNotFoundError("Такого спринта не найдено.")
-    sprint.delete()
-    return SuccessfulResponse()
+    await sprint.delete()
+    return None
