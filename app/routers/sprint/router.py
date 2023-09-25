@@ -28,8 +28,10 @@ async def get_sprint(sprint_id: UUID = Path(...), user: User = Depends(guest)):
     return sprint
 
 
-@router.get("/{workplace_id}/sprints", response_model=list[Sprint], status_code=status.HTTP_200_OK)
-async def get_sprints(workplace_id: UUID = Path(...), user: User = Depends(guest), skip: int = 0, limit: int = 20):
+@router.get("/{workplace_id}/sprints/{skip}/{limit}", response_model=list[Sprint], status_code=status.HTTP_200_OK)
+async def get_sprints(
+    workplace_id: UUID = Path(...), skip: int = Path(...), limit: int = Path(...), user: User = Depends(guest)
+):
     sprints = await Sprint.find_all(Sprint.workplace_id == workplace_id).skip(skip).limit(limit).to_list()
     return sprints
 

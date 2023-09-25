@@ -1,8 +1,10 @@
 from datetime import datetime
 from enum import StrEnum
 from typing import Optional
+from uuid import UUID
 
 from beanie import Document, Indexed
+from beanie.odm.documents import PydanticObjectId
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -42,3 +44,18 @@ class User(Document, UserRegister):
 
 class SuccessfulResponse(BaseModel):
     details: str = Field("Выполнено", title="Статус операции")
+
+
+# Role и UserAssignedWorkplace лежат тут чтобы избежать зацикливания импортов, поскольку эти классы используются в oauth
+
+
+class Role(StrEnum):
+    ADMIN = "ADMIN"
+    MEMBER = "MEMBER"
+    GUEST = "GUEST"
+
+
+class UserAssignedWorkplace(Document):
+    user_id: PydanticObjectId
+    workplace_id: UUID
+    role: Role
