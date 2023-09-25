@@ -30,7 +30,7 @@ class RoleChecker:
         )
         if workplace is not None and workplace.role in self.role:
             return user
-        raise ForbiddenException()
+        raise ForbiddenException("Не авторизован.")
 
 
 # доступно только админу
