@@ -1,3 +1,4 @@
+from typing import List
 from uuid import UUID
 
 from app.auth.oauth2 import admin, guest
@@ -28,7 +29,7 @@ async def get_sprint(sprint_id: UUID = Path(...), user: User = Depends(guest)):
     return sprint
 
 
-@router.get("/{workplace_id}/sprints/{skip}/{limit}", response_model=list[Sprint], status_code=status.HTTP_200_OK)
+@router.get("/{workplace_id}/sprints/{skip}/{limit}", response_model=List[Sprint], status_code=status.HTTP_200_OK)
 async def get_sprints(
     workplace_id: UUID = Path(...), skip: int = Path(...), limit: int = Path(...), user: User = Depends(guest)
 ):
