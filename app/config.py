@@ -1,16 +1,11 @@
 from datetime import timedelta
 
-from pydantic import RedisDsn
+from pydantic import MongoDsn, RedisDsn
 from pydantic_settings import BaseSettings
 
 
 class MongoDsnSettings(BaseSettings):
-    MG_PATH: str = "localhost"
-    MG_PORT: str = "27017"
-    MG_USER: str = "aboba"
-    MG_PASS: str = "aboba"
-
-    DATABASE_URL: str = f"mongodb://{MG_USER}:{MG_PASS}@{MG_PATH}:{MG_PORT}"
+    MONGO_URL: MongoDsn = "mongodb://localhost:6379"
 
     class Config:
         env_file = ".env"

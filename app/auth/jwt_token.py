@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta
 
-from app.config import client_api_settings
-from app.core.exceptions import Unauthorized
-from app.routers.auth.schemas import TokenData
 from jose import jwt
 from jose.exceptions import ExpiredSignatureError, JWEError
 from pydantic import ValidationError
+
+from app.config import client_api_settings
+from app.core.exceptions import Unauthorized
+from app.routers.auth.schemas import TokenData
 
 
 def create_access_token(data: TokenData) -> str:

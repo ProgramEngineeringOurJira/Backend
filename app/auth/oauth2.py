@@ -7,6 +7,7 @@ from app.routers.auth.schemas import Role, User, UserAssignedWorkplace
 from fastapi import Depends, Path
 from fastapi.security import HTTPBearer
 
+
 oauth2_scheme = HTTPBearer()
 
 

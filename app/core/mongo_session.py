@@ -1,5 +1,6 @@
-from app.config import mongo_settings
 from motor.motor_asyncio import AsyncIOMotorClient
+
+from app.config import mongo_settings
 
 
 class MongoManager:
@@ -9,4 +10,4 @@ class MongoManager:
     """
 
     def get_async_client(self) -> AsyncIOMotorClient:
-        return AsyncIOMotorClient(mongo_settings.DATABASE_URL)
+        return AsyncIOMotorClient(str(mongo_settings.MONGO_URL))

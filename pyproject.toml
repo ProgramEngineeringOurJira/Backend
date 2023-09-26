@@ -1,15 +1,12 @@
 [tool.poetry]
 name = "backend"
 version = "0.1.0"
-description = "Backend services for Sputnik"
+description = "Backend Jira"
 authors = ["Nicialy <Nicialy@yandex.ru>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-alembic = "^1.11.2"
-sqlalchemy = {version = "^2.0.19", extras = ["asyncio"]}
-celery = {version = "^5.3.1", extras = ["redis"]}
 pydantic = {extras = ["email"], version = "^2.3.0"}
 httpx = "^0.24.1"
 pytest-mock = "^3.11.1"

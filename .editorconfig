@@ -9,7 +9,7 @@ indent_size = 2
 [*.py]
 indent_size = 4
 line_length = 120
-src_paths = sputnik
+src_paths = app
 multi_line_output = 3
 default_section = THIRDPARTY
 recursive = true
