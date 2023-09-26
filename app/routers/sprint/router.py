@@ -17,6 +17,7 @@ async def create_sprint(
     sprint_creation: SprintCreation = Body(...), workplace_id: UUID = Path(...), user: User = Depends(admin)
 ):
     sprint = Sprint(**sprint_creation.model_dump(), workplace_id=workplace_id)
+    await sprint.validate_date_no_intersection()
     await sprint.create()
     return SuccessfulResponse()
 
@@ -44,7 +45,10 @@ async def edit_sprint(
     sprint = await Sprint.find(Sprint.id == sprint_id).first_or_none()
     if sprint is None:
         raise SprintNotFoundError("Такого спринта не найдено.")
-    await sprint.update({"$set": sprint_creation.model_dump()})
+    # изменяем класс не меняя данные в базе и проверяем их корректность, и уже потом сохраняем
+    sprint.__dict__.update(sprint_creation.model_dump())
+    await sprint.validate_date_no_intersection()
+    await sprint.save()
     return SuccessfulResponse()
 
 
