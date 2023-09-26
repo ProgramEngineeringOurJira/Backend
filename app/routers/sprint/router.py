@@ -2,9 +2,10 @@ from typing import List
 from uuid import UUID
 
 from app.auth.oauth2 import admin, guest
-from app.core.exceptions import SprintNotFoundError
+from app.core.exceptions import SprintNotFoundError, ValidationError
 from app.routers.auth import User
 from app.routers.auth.schemas import SuccessfulResponse
+from beanie.odm.operators.find.logical import And, Or
 from fastapi import APIRouter, Body, Depends, Path, status
 
 from .schemas import Sprint, SprintCreation
@@ -17,7 +18,15 @@ async def create_sprint(
     sprint_creation: SprintCreation = Body(...), workplace_id: UUID = Path(...), user: User = Depends(admin)
 ):
     sprint = Sprint(**sprint_creation.model_dump(), workplace_id=workplace_id)
-    await sprint.validate_date_no_intersection()
+    find_sprint = await Sprint.find(
+        Or(
+            And(Sprint.start_date >= sprint_creation.start_date, Sprint.start_date < sprint_creation.end_date),
+            And(Sprint.end_date > sprint_creation.start_date, Sprint.end_date <= sprint_creation.end_date),
+            And(Sprint.start_date <= sprint_creation.start_date, Sprint.end_date >= sprint_creation.end_date),
+        )
+    ).first_or_none()
+    if find_sprint is not None:
+        raise ValidationError("Спринты не должны пересекаться по дате.")
     await sprint.create()
     return SuccessfulResponse()
 
@@ -45,10 +54,17 @@ async def edit_sprint(
     sprint = await Sprint.find(Sprint.id == sprint_id).first_or_none()
     if sprint is None:
         raise SprintNotFoundError("Такого спринта не найдено.")
-    # изменяем класс не меняя данные в базе и проверяем их корректность, и уже потом сохраняем
-    sprint.__dict__.update(sprint_creation.model_dump())
-    await sprint.validate_date_no_intersection()
-    await sprint.save()
+    find_sprint = await Sprint.find(
+        Sprint.id != sprint_id,
+        Or(
+            And(Sprint.start_date >= sprint_creation.start_date, Sprint.start_date < sprint_creation.end_date),
+            And(Sprint.end_date > sprint_creation.start_date, Sprint.end_date <= sprint_creation.end_date),
+            And(Sprint.start_date <= sprint_creation.start_date, Sprint.end_date >= sprint_creation.end_date),
+        ),
+    ).first_or_none()
+    if find_sprint is not None:
+        raise ValidationError("Спринты не должны пересекаться по дате.")
+    await sprint.update({"$set": sprint_creation.model_dump()})
     return SuccessfulResponse()
 
 
