@@ -1,9 +1,10 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from app.core.exceptions import ValidationError
 from beanie import Document
 from pydantic import BaseModel, Field, model_validator
+
+from app.core.exceptions import ValidationError
 
 
 class SprintCreation(BaseModel):
