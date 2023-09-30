@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from pydantic import MongoDsn, RedisDsn
+from pydantic import MongoDsn, RedisDsn, EmailStr
 from pydantic_settings import BaseSettings
 
 
@@ -37,9 +37,17 @@ class ClientAPISettings(BaseSettings):
         env_file = ".env"
         extra = "ignore"
 
+class EmailSettings(BaseSettings):
+    EMAIL_HOST: str = "smtp.yandex.ru"
+    EMAIL_PORT: int = 465
+    EMAIL_USERNAME: str = "fromkristiadm"
+    EMAIL_PASSWORD: str = "ekctnpmughanqruz"
+    EMAIL_FROM: EmailStr = "fromkristiadm@yandex.ru"
+
 
 client_api_settings = ClientAPISettings()
 mongo_settings = MongoDsnSettings(extra="ignore")
 redis_settings = RedisSettings(extra="ignore")
+email_settings = EmailSettings()
 
 # TODO: сделать получение настроек через DI

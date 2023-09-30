@@ -4,6 +4,7 @@ from app.auth.hash import get_password_hash, verify_password
 from app.auth.jwt_token import create_access_token, create_refresh_token
 from app.auth.oauth2 import get_current_user
 from app.core.exceptions import UserFoundException
+from app.email.email import Email
 
 from .schemas import SuccessfulResponse, Token, TokenData, User, UserRegister
 
@@ -37,6 +38,7 @@ async def register_user(user_register: UserRegister):
     if user is not None:
         raise UserFoundException("Юзер уже существует")
     # TODO отправка на почту
+    await Email([user_register.email]).sendMail("Welcome")
     hashed = get_password_hash(user_register.password)
     user = User(email=user_register.email, password=hashed)
     await user.create()
