@@ -15,4 +15,4 @@ class WorkplaceCreation(BaseModel):
 class Workplace(Document, WorkplaceCreation):
     id: UUID = Field(default_factory=uuid4)
     states: List[str] = Field(default=["Backlog", "To do", "In Progress", "In Review", "QA", "Done"])
-    assigned_users: list[Link[UserAssignedWorkplace]] = Field(default=list())
+    users: list[Link[UserAssignedWorkplace]] = Field(default=list())
