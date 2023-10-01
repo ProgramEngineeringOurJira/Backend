@@ -73,3 +73,11 @@ class SprintNotFoundError(CommonException):
 class ValidationError(CommonException):
     def __init__(self, error: str) -> None:
         super().__init__(status.HTTP_400_BAD_REQUEST, error)
+
+class TimeOutCodeException(CommonException):
+    def __init__(self, error: str) -> None:
+        super().__init__(status.HTTP_403_FORBIDDEN, error)
+
+class IncorrectCodeException(CommonException):
+    def __init__(self, error: str) -> None:
+        super().__init__(status.HTTP_401_UNAUTHORIZED, error)

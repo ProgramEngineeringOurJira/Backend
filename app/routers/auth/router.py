@@ -1,12 +1,16 @@
-from fastapi import APIRouter, Body, Depends, status
+from fastapi import APIRouter, Body, Depends, Request, status
+from fastapi.responses import RedirectResponse
 
 from app.auth.hash import get_password_hash, verify_password
 from app.auth.jwt_token import create_access_token, create_refresh_token
 from app.auth.oauth2 import get_current_user
-from app.core.exceptions import UserFoundException
+from app.core.exceptions import UserFoundException, TimeOutCodeException, IncorrectCodeException
 from app.email.email import Email
+from app.core.redis_session import Redis
 
 from .schemas import SuccessfulResponse, Token, TokenData, User, UserRegister
+
+from uuid import uuid4
 
 router = APIRouter(tags=["Auth"])
 
@@ -33,16 +37,30 @@ async def refresh_token(user: User = Depends(get_current_user)):
 
 
 @router.post("/register", response_model=SuccessfulResponse, status_code=status.HTTP_201_CREATED)
-async def register_user(user_register: UserRegister):
+async def register_user(user_register: UserRegister, request: Request, redis: Redis = Depends(Redis)):
     user = await User.by_email(user_register.email)
     if user is not None:
         raise UserFoundException("Юзер уже существует")
     # TODO отправка на почту
-    await Email([user_register.email]).sendMail("Welcome")
+    uuid = str(uuid4())
+    url = f"{request.url.scheme}://{request.client.host}:{request.url.port}/verifyemail/{uuid}"
+    await redis.set_uuid_email(uuid, [user_register.email, user_register.password])
+    await Email(url, [user_register.email]).sendMail()
+
+
+@router.get("/verifyemail/{token}", status_code=status.HTTP_200_OK)
+async def verify_email(token: str, redis: Redis = Depends(Redis), user_register: UserRegister = Body()):
+    check = await redis.get_uuid(user=[user_register.email, user_register.password])
+    if check is None:
+        raise TimeOutCodeException(error="Время истекло")
+    if check != token:
+        raise IncorrectCodeException(error="Код не верен")
+    
     hashed = get_password_hash(user_register.password)
     user = User(email=user_register.email, password=hashed)
     await user.create()
-    return SuccessfulResponse()
+    
+    return RedirectResponse("/")  
 
 
 @router.get("/profile/", response_model=User, status_code=status.HTTP_200_OK)

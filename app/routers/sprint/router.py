@@ -1,12 +1,13 @@
 from typing import List
 from uuid import UUID
 
+from beanie.odm.operators.find.logical import And, Or
+from fastapi import APIRouter, Body, Depends, Path, status
+
 from app.auth.oauth2 import admin, guest
 from app.core.exceptions import SprintNotFoundError, ValidationError
 from app.routers.auth import User
 from app.routers.auth.schemas import SuccessfulResponse
-from beanie.odm.operators.find.logical import And, Or
-from fastapi import APIRouter, Body, Depends, Path, status
 
 from .schemas import Sprint, SprintCreation
 
