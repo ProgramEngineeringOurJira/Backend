@@ -37,15 +37,17 @@ async def refresh_token(user: User = Depends(get_current_user)):
 
 
 @router.post("/register", response_model=SuccessfulResponse, status_code=status.HTTP_201_CREATED)
-async def register_user(user_register: UserRegister, request: Request, redis: Redis = Depends(Redis)):
+async def register_user(user_register: UserRegister, request: Request):
+    redis= Redis()
     user = await User.by_email(user_register.email)
     if user is not None:
         raise UserFoundException("Юзер уже существует")
     # TODO отправка на почту
     uuid = str(uuid4())
     url = f"{request.url.scheme}://{request.client.host}:{request.url.port}/verifyemail/{uuid}"
-    await redis.set_uuid_email(uuid, [user_register.email, user_register.password])
+    await redis.set_uuid_email(uuid, "1234")
     await Email(url, [user_register.email]).sendMail()
+    return SuccessfulResponse()
 
 
 @router.get("/verifyemail/{token}", status_code=status.HTTP_200_OK)
