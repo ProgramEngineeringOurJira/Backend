@@ -1,6 +1,13 @@
 import redis.asyncio as redis
+from pydantic import BaseModel, EmailStr
 
 from app.config import redis_settings
+
+
+# UserRegister перенесён сюда из app.routes.auth, так как там он зацикливался
+class UserRegister(BaseModel):
+    email: EmailStr
+    password: str
 
 
 class Redis:
@@ -22,12 +29,9 @@ class Redis:
         if cls.con:
             await cls.con.close()
 
-    async def set_uuid_email(self, uuid: str, user: list) -> None:
-        await self.con.set(uuid, user)
-        await self.con.expire(uuid, 5*60)
+    async def set_uuid_email(self, uuid: str, user: UserRegister) -> None:
+        await self.con.set(uuid, user.model_dump_json())
+        await self.con.expire(uuid, 5 * 60)
 
-    async def get_uuid(self, user: list) -> str:
-        return await self.con.get(user)
-    
-    async def get_user(self, uuid: str) -> list:
+    async def get_user(self, uuid: str) -> UserRegister:
         return await self.con.get(uuid)

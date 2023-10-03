@@ -34,9 +34,9 @@ class Email:
         message = MessageSchema(
             subject="Welcome",
             recipients=self.email,
-            body="<p>Hey, welcome to Kristi! To confirm the email address, " +
-                    f"follow <a href={self.url}>this link</a></p>",
-            subtype=MessageType.html
+            body="<p>Hey, welcome to Kristi! To confirm the email address, "
+            + f"follow <a href={self.url}>this link</a></p>",
+            subtype=MessageType.html,
         )
 
         # Send the email

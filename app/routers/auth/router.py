@@ -1,16 +1,17 @@
+import json
+from uuid import uuid4
+
 from fastapi import APIRouter, Body, Depends, Request, status
 from fastapi.responses import RedirectResponse
 
 from app.auth.hash import get_password_hash, verify_password
 from app.auth.jwt_token import create_access_token, create_refresh_token
 from app.auth.oauth2 import get_current_user
-from app.core.exceptions import UserFoundException, TimeOutCodeException, IncorrectCodeException
+from app.core.exceptions import EmailVerificationException, UserFoundException
+from app.core.redis_session import Redis, UserRegister
 from app.email.email import Email
-from app.core.redis_session import Redis
 
-from .schemas import SuccessfulResponse, Token, TokenData, User, UserRegister
-
-from uuid import uuid4
+from .schemas import SuccessfulResponse, Token, TokenData, User
 
 router = APIRouter(tags=["Auth"])
 
@@ -38,31 +39,31 @@ async def refresh_token(user: User = Depends(get_current_user)):
 
 @router.post("/register", response_model=SuccessfulResponse, status_code=status.HTTP_201_CREATED)
 async def register_user(user_register: UserRegister, request: Request):
-    redis= Redis()
+    redis = Redis()
     user = await User.by_email(user_register.email)
     if user is not None:
         raise UserFoundException("Юзер уже существует")
-    # TODO отправка на почту
+    # Отправка на почту
     uuid = str(uuid4())
     url = f"{request.url.scheme}://{request.client.host}:{request.url.port}/verifyemail/{uuid}"
-    await redis.set_uuid_email(uuid, "1234")
+    await redis.set_uuid_email(uuid, user_register)
     await Email(url, [user_register.email]).sendMail()
-    return SuccessfulResponse()
+
+    return SuccessfulResponse(details=uuid)
 
 
 @router.get("/verifyemail/{token}", status_code=status.HTTP_200_OK)
-async def verify_email(token: str, redis: Redis = Depends(Redis), user_register: UserRegister = Body()):
-    check = await redis.get_uuid(user=[user_register.email, user_register.password])
+async def verify_email(token: str, redis: Redis = Depends(Redis)):
+    check = await redis.get_user(uuid=token)
     if check is None:
-        raise TimeOutCodeException(error="Время истекло")
-    if check != token:
-        raise IncorrectCodeException(error="Код не верен")
-    
-    hashed = get_password_hash(user_register.password)
-    user = User(email=user_register.email, password=hashed)
+        raise EmailVerificationException(error="Произошла ошибка! Истекло время или неправильный код")
+
+    user_data = json.loads(check)
+    hashed = get_password_hash(user_data["password"])
+    user = User(email=user_data["email"], password=hashed)
     await user.create()
-    
-    return RedirectResponse("/")  
+
+    return RedirectResponse("/")
 
 
 @router.get("/profile/", response_model=User, status_code=status.HTTP_200_OK)

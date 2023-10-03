@@ -7,7 +7,7 @@ from .exceptions import (
     NotFoundException,
 )
 from .mongo_session import MongoManager
-from .redis_session import Redis
+from .redis_session import Redis, UserRegister
 
 __all__ = [
     "CommonException",
@@ -18,4 +18,5 @@ __all__ = [
     "DoNotUsuRefreshToken",
     "Redis",
     "MongoManager",
+    "UserRegister",
 ]
