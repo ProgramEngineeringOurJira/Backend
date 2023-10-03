@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID, uuid4
 
 from beanie import Document
@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 class Priority(StrEnum):
     LOW = "LOW"
-    NORMAL = "MORMAL"
+    NORMAL = "NORMAL"
     HIGH = "HIGH"
     URGENT = "URGRENT"
 
@@ -28,4 +28,5 @@ class Issue(Document, IssueCreation):
     creation_date: datetime = Field(default_factory=datetime.now)
     workplace_id: UUID
     author_id: PydanticObjectId
-    # sprint_id: UUID
+    implementers: List[PydanticObjectId]
+    # comments: List[Link[Comment]]

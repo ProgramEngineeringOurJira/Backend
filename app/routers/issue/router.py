@@ -1,12 +1,15 @@
 from typing import List
 from uuid import UUID
 
+from beanie import DeleteRules
+from beanie.odm.documents import PydanticObjectId
+from beanie.operators import In
 from fastapi import APIRouter, Body, Depends, Path, status
 
 from app.auth.oauth2 import guest, member
 from app.core.exceptions import IssueNotFoundError, SprintNotFoundError, ValidationError
-from app.routers.auth import User
-from app.routers.auth.schemas import SuccessfulResponse
+from app.routers.auth import User, UserAssignedWorkplace
+from app.routers.auth.schemas import Role, SuccessfulResponse
 from app.routers.sprint import Sprint
 
 from .schemas import Issue, IssueCreation
@@ -25,7 +28,7 @@ async def create_issue(
             raise SprintNotFoundError("Такого спринта не найдено.")
         if sprint.workplace_id != workplace_id:
             raise ValidationError("Спринт должен находиться в том же воркплейсе.")
-    issue = Issue(**issue_creation.model_dump(), workplace_id=workplace_id, author_id=user.id)
+    issue = Issue(**issue_creation.model_dump(), workplace_id=workplace_id, author_id=user.id, implementers=list())
     await issue.create()
     return SuccessfulResponse()
 
@@ -76,8 +79,49 @@ async def delete_issue(issue_id: UUID = Path(...), user: User = Depends(member))
     issue = await Issue.find_one(Issue.id == issue_id)
     if issue is None:
         raise IssueNotFoundError("Такой задачи не найдено.")
-    await issue.delete()
-    # TODO удалить прикреплённые комментарии. и информацию о приписанных людях
-    # Про подключении UserAssignedIssue снова вознокает проблема из-за круговых импортов
-    # полюс то же возникнет и в других delete запросах из-за необходимости каскадного удаления связных вещей
+    await issue.delete(link_rule=DeleteRules.DELETE_LINKS)
+    return None
+
+
+@router.post(
+    "/{workplace_id}/issues/{issue_id}/users",
+    response_model=SuccessfulResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def assign_users(
+    users_id: List[PydanticObjectId] = Body(...),
+    workplace_id: UUID = Path(...),
+    issue_id: UUID = Path(...),
+    user: User = Depends(member),
+):
+    if len(await User.find(In(User.id, users_id)).to_list()) != len(users_id):
+        raise ValidationError("Такого пользователя не существует.")
+    # обещано что нижнее решит виталий
+    if len(
+        await UserAssignedWorkplace.find(
+            UserAssignedWorkplace.workplace_id == workplace_id,
+            In(UserAssignedWorkplace.user_id, users_id),
+            UserAssignedWorkplace.role != Role.GUEST,
+        ).to_list()
+    ) != len(users_id):
+        raise ValidationError("Задачу можно назначить только членам воркплейса.")
+
+    issue = await Issue.find_one(Issue.id == issue_id)
+    if issue is None:
+        raise IssueNotFoundError("Такой задачи не найдено.")
+    new_users = [id for id in users_id if id not in issue.implementers]
+    issue.implementers.extend(new_users)
+    await issue.save()
+    return SuccessfulResponse()
+
+
+@router.delete("/{workplace_id}/issues/{issue_id}/users", response_model=None, status_code=status.HTTP_204_NO_CONTENT)
+async def unassign_users(
+    users_id: List[PydanticObjectId] = Body(...), issue_id: UUID = Path(...), user: User = Depends(member)
+):
+    issue = await Issue.find_one(Issue.id == issue_id)
+    if issue is None:
+        raise IssueNotFoundError("Такой задачи не найдено.")
+    issue.implementers = [user_id for user_id in issue.implementers if user_id not in users_id]
+    await issue.save()
     return None
