@@ -65,6 +65,16 @@ class Unauthorized(CommonException):
         super().__init__(status.HTTP_401_UNAUTHORIZED, "Не авторизован")
 
 
+class IssueNotFoundError(CommonException):
+    def __init__(self, error: str) -> None:
+        super().__init__(status.HTTP_404_NOT_FOUND, error)
+
+
+class UserNotFoundError(CommonException):
+    def __init__(self, error: str) -> None:
+        super().__init__(status.HTTP_404_NOT_FOUND, error)
+
+
 class SprintNotFoundError(CommonException):
     def __init__(self, error: str) -> None:
         super().__init__(status.HTTP_404_NOT_FOUND, error)
