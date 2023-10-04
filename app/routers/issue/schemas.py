@@ -28,5 +28,5 @@ class Issue(Document, IssueCreation):
     creation_date: datetime = Field(default_factory=datetime.now)
     workplace_id: UUID
     author_id: PydanticObjectId
-    implementers: List[PydanticObjectId]
+    implementers: List[PydanticObjectId] = Field(default_factory=list)
     # comments: List[Link[Comment]]
