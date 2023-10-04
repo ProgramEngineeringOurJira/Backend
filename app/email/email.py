@@ -1,6 +1,5 @@
-from typing import List
-
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
+from pydantic import EmailStr
 
 from app.config import email_settings
 
@@ -10,7 +9,7 @@ class Email:
         if not hasattr(cls, "instance"):
             cls.instance = super(Email, cls).__new__(cls)
         return cls.instance
-    
+
     # Конфигурация для отправляемых сообщений
     conf: ConnectionConfig = ConnectionConfig(
         MAIL_USERNAME=email_settings.EMAIL_USERNAME,
@@ -25,9 +24,9 @@ class Email:
     )
 
     # Конструктор сообщения по конфигурации
-    fm : FastMail = FastMail(conf)
+    fm: FastMail = FastMail(conf)
 
-    async def sendMail(self, url: str, email: ):
+    async def sendMail(self, url: str, email: EmailStr):
         # Определяет тело письма и его получателя
         message = MessageSchema(
             subject="Welcome",

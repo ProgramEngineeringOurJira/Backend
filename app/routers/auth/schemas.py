@@ -8,7 +8,6 @@ from beanie.odm.documents import PydanticObjectId
 from pydantic import BaseModel, EmailStr, Field
 
 
-
 class Token(BaseModel):
     access_token: str
     refresh_token: str
@@ -23,9 +22,11 @@ class TokenData(BaseModel):
     email: Optional[str] = None
     exp: Optional[datetime] = None
 
+
 class UserRegister(BaseModel):
     email: EmailStr
     password: str
+
 
 class User(Document, UserRegister):
     email: Indexed(str, unique=True)

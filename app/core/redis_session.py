@@ -1,5 +1,6 @@
 import redis.asyncio as redis
-from app.config import redis_settings, email_settings
+
+from app.config import email_settings, redis_settings
 from app.routers.auth.schemas import UserRegister
 
 # UserRegister перенесён сюда из app.routes.auth, так как там он зацикливался

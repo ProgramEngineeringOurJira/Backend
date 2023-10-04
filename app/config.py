@@ -22,6 +22,7 @@ class RedisSettings(BaseSettings):
 
 class ClientAPISettings(BaseSettings):
     APP_NAME: str = "jira"
+    MAIN_URL: str = "/"
     PATH_PREFIX: str = "/v1"
     APP_HOST: str = "http://0.0.0.0"
     APP_PORT: int = 8080
@@ -45,7 +46,7 @@ class EmailSettings(BaseSettings):
     EMAIL_PASSWORD: str
     EMAIL_FROM: str
 
-    TTL: int = 5*60
+    TTL: int = 5 * 60
 
     class Config:
         env_file = ".env"
