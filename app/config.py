@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings
 
 
 class MongoDsnSettings(BaseSettings):
-    MONGO_URL: MongoDsn = "mongodb://localhost:6379"
+    MONGO_URL: MongoDsn = "mongodb://localhost:27017"
 
     class Config:
         env_file = ".env"

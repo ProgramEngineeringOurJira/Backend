@@ -15,7 +15,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
     token = decode_token(token.credentials)
     user = await User.by_email(token.email)
     if not user:
-        raise Unauthorized
+        raise Unauthorized()
     return user
 
 
