@@ -1,4 +1,3 @@
-from .router import router
 from .schemas import Issue
 
-__all__ = ["Issue", "router"]
+__all__ = ["Issue"]
