@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from pydantic import EmailStr, MongoDsn, RedisDsn
+from pydantic import MongoDsn, RedisDsn
 from pydantic_settings import BaseSettings
 
 
@@ -39,11 +39,17 @@ class ClientAPISettings(BaseSettings):
 
 
 class EmailSettings(BaseSettings):
-    EMAIL_HOST: str = "smtp.yandex.ru"
-    EMAIL_PORT: int = 465
-    EMAIL_USERNAME: str = "fromkristiadm"
-    EMAIL_PASSWORD: str = "ekctnpmughanqruz"
-    EMAIL_FROM: EmailStr = "fromkristiadm@yandex.ru"
+    EMAIL_HOST: str
+    EMAIL_PORT: int
+    EMAIL_USERNAME: str
+    EMAIL_PASSWORD: str
+    EMAIL_FROM: str
+
+    TTL: int = 5*60
+
+    class Config:
+        env_file = ".env"
+        extra = "ignore"
 
 
 client_api_settings = ClientAPISettings()

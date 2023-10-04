@@ -4,14 +4,18 @@ from uuid import uuid4
 from fastapi import APIRouter, Body, Depends, Request, status
 from fastapi.responses import RedirectResponse
 
+from .schemas import SuccessfulResponse, Token, TokenData, User,UserRegister
+
 from app.auth.hash import get_password_hash, verify_password
 from app.auth.jwt_token import create_access_token, create_refresh_token
 from app.auth.oauth2 import get_current_user
 from app.core.exceptions import EmailVerificationException, UserFoundException
-from app.core.redis_session import Redis, UserRegister
+from app.core.redis_session import Redis
+
+
+
 from app.email.email import Email
 
-from .schemas import SuccessfulResponse, Token, TokenData, User
 
 router = APIRouter(tags=["Auth"])
 
@@ -38,8 +42,12 @@ async def refresh_token(user: User = Depends(get_current_user)):
 
 
 @router.post("/register", response_model=SuccessfulResponse, status_code=status.HTTP_201_CREATED)
-async def register_user(user_register: UserRegister, request: Request):
-    redis = Redis()
+async def register_user(
+        user_register: UserRegister,
+        request: Request,
+        redis: Redis = Depends(Redis),
+        email: Email = Depends(Email)
+    ):
     user = await User.by_email(user_register.email)
     if user is not None:
         raise UserFoundException("Юзер уже существует")
@@ -47,7 +55,7 @@ async def register_user(user_register: UserRegister, request: Request):
     uuid = str(uuid4())
     url = f"{request.url.scheme}://{request.client.host}:{request.url.port}/verifyemail/{uuid}"
     await redis.set_uuid_email(uuid, user_register)
-    await Email(url, [user_register.email]).sendMail()
+    await email.sendMail(url, user_register.email)
 
     return SuccessfulResponse(details=uuid)
 

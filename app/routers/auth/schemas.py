@@ -5,9 +5,8 @@ from uuid import UUID
 
 from beanie import Document, Indexed
 from beanie.odm.documents import PydanticObjectId
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 
-from app.core.redis_session import UserRegister
 
 
 class Token(BaseModel):
@@ -24,6 +23,9 @@ class TokenData(BaseModel):
     email: Optional[str] = None
     exp: Optional[datetime] = None
 
+class UserRegister(BaseModel):
+    email: EmailStr
+    password: str
 
 class User(Document, UserRegister):
     email: Indexed(str, unique=True)
