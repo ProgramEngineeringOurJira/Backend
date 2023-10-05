@@ -1,7 +1,6 @@
 from typing import List
 from uuid import UUID
 
-from beanie import WriteRules
 from beanie.odm.operators.find.logical import And, Or
 from bson import Binary, UuidRepresentation
 from fastapi import APIRouter, Body, Depends, Path, status
@@ -35,7 +34,7 @@ async def create_sprint(
     await sprint.create()
     workplace = await Workplace.find_one(Workplace.id == workplace_id)
     workplace.sprints.append(Sprint.link_from_id(Binary.from_uuid(sprint.id, UuidRepresentation.STANDARD)))
-    await workplace.save(link_rule=WriteRules.WRITE)
+    await workplace.save()
     return SuccessfulResponse()
 
 
@@ -82,11 +81,15 @@ async def edit_sprint(
 
 @router.delete("/{workplace_id}/sprints/{sprint_id}", response_model=None, status_code=status.HTTP_204_NO_CONTENT)
 async def delete_sprint(workplace_id: UUID = Path(...), sprint_id: UUID = Path(...), user: User = Depends(admin)):
-    sprint = await Sprint.find_one(Sprint.id == sprint_id)
+    sprint = await Sprint.find_one(Sprint.id == sprint_id, fetch_links=True)
     if sprint is None:
         raise SprintNotFoundError("Такого спринта не найдено.")
-    workplace = await Workplace.find_one(Workplace.id == workplace_id, fetch_links=True)
-    workplace.sprints.remove(sprint)
+    for issue in sprint.issues:
+        issue.sprint_id = None
+        await issue.save()
+    workplace = await Workplace.find_one(Workplace.id == workplace_id)
+    link = Sprint.link_from_id(Binary.from_uuid(sprint.id, UuidRepresentation.STANDARD))
+    workplace.sprints = [spr for spr in workplace.sprints if spr.ref != link.ref]
     await workplace.save()
     await sprint.delete()
     return None
