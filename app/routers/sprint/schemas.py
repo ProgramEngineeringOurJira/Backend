@@ -22,3 +22,4 @@ class SprintCreation(BaseModel):
 class Sprint(Document, SprintCreation):
     workplace_id: UUID
     id: UUID = Field(default_factory=uuid4)
+    # id: int = Field(default=1)

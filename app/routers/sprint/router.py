@@ -1,13 +1,16 @@
 from typing import List
 from uuid import UUID
 
+from beanie import WriteRules
 from beanie.odm.operators.find.logical import And, Or
+from bson import Binary, UuidRepresentation
 from fastapi import APIRouter, Body, Depends, Path, status
 
 from app.auth.oauth2 import admin, guest
 from app.core.exceptions import SprintNotFoundError, ValidationError
 from app.routers.auth import User
 from app.routers.auth.schemas import SuccessfulResponse
+from app.routers.workplace import Workplace
 
 from .schemas import Sprint, SprintCreation
 
@@ -30,6 +33,9 @@ async def create_sprint(
     if find_sprint is not None:
         raise ValidationError("Спринты не должны пересекаться по дате.")
     await sprint.create()
+    workplace = await Workplace.find_one(Workplace.id == workplace_id)
+    workplace.sprints.append(Sprint.link_from_id(Binary.from_uuid(sprint.id, UuidRepresentation.STANDARD)))
+    await workplace.save(link_rule=WriteRules.WRITE)
     return SuccessfulResponse()
 
 
@@ -75,10 +81,12 @@ async def edit_sprint(
 
 
 @router.delete("/{workplace_id}/sprints/{sprint_id}", response_model=None, status_code=status.HTTP_204_NO_CONTENT)
-async def delete_sprint(sprint_id: UUID = Path(...), user: User = Depends(admin)):
+async def delete_sprint(workplace_id: UUID = Path(...), sprint_id: UUID = Path(...), user: User = Depends(admin)):
     sprint = await Sprint.find_one(Sprint.id == sprint_id)
     if sprint is None:
         raise SprintNotFoundError("Такого спринта не найдено.")
+    workplace = await Workplace.find_one(Workplace.id == workplace_id, fetch_links=True)
+    workplace.sprints.remove(sprint)
+    await workplace.save()
     await sprint.delete()
-    # TODO для прикреплённых задач поменять спринт
     return None

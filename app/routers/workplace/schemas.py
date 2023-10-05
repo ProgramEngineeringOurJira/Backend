@@ -5,6 +5,7 @@ from beanie import Document, Link
 from pydantic import BaseModel, Field
 
 from app.routers.auth.schemas import UserAssignedWorkplace
+from app.routers.sprint import Sprint
 
 
 class WorkplaceCreation(BaseModel):
@@ -12,7 +13,12 @@ class WorkplaceCreation(BaseModel):
     description: Optional[str] = None
 
 
+def states():
+    return ["Backlog", "To do", "In Progress", "In Review", "QA", "Done"]
+
+
 class Workplace(Document, WorkplaceCreation):
     id: UUID = Field(default_factory=uuid4)
-    states: List[str] = Field(default=["Backlog", "To do", "In Progress", "In Review", "QA", "Done"])
-    users: list[Link[UserAssignedWorkplace]] = Field(default=list())
+    states: List[str] = Field(default_factory=states)
+    users: List[Link[UserAssignedWorkplace]] = Field(default_factory=list)
+    sprints: List[Link[Sprint]] = Field(default_factory=list)
