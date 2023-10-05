@@ -1,10 +1,12 @@
 from datetime import datetime
+from typing import List
 from uuid import UUID, uuid4
 
-from beanie import Document
+from beanie import Document, Link
 from pydantic import BaseModel, Field, model_validator
 
 from app.core.exceptions import ValidationError
+from app.routers.issue import Issue
 
 
 class SprintCreation(BaseModel):
@@ -22,4 +24,4 @@ class SprintCreation(BaseModel):
 class Sprint(Document, SprintCreation):
     workplace_id: UUID
     id: UUID = Field(default_factory=uuid4)
-    # id: int = Field(default=1)
+    issues: List[Link[Issue]] = Field(default_factory=list)
