@@ -34,4 +34,6 @@ class Redis:
         await self.con.expire(uuid, email_settings.TTL)
 
     async def get_user(self, uuid: str) -> UserRegister:
-        return await self.con.get(uuid)
+        user = await self.con.get(uuid)
+        await self.con.delete(uuid)
+        return user

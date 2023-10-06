@@ -3,14 +3,13 @@ from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, Request, status
 from fastapi.responses import RedirectResponse
-from pymongo.errors import DuplicateKeyError
 
 from app.auth.hash import get_password_hash, verify_password
 from app.auth.jwt_token import create_access_token, create_refresh_token
 from app.auth.oauth2 import get_current_user
 from app.config import client_api_settings
 from app.core import UserRegister
-from app.core.exceptions import AlreadyConfirmedException, EmailVerificationException, UserFoundException
+from app.core.exceptions import EmailVerificationException, UserFoundException
 from app.core.redis_session import Redis
 from app.email.email import Email
 
@@ -69,10 +68,7 @@ async def verify_email(token: str, redis: Redis = Depends(Redis)):
     user_data = json.loads(check)
     hashed = get_password_hash(user_data["password"])
     user = User(email=user_data["email"], password=hashed)
-    try:
-        await user.create()
-    except DuplicateKeyError:
-        raise AlreadyConfirmedException("Пользователь уже подтвердил почту")
+    await user.create()
 
     return RedirectResponse(client_api_settings.MAIN_URL)
 
