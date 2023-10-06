@@ -32,8 +32,10 @@ async def create_sprint(
     if find_sprint is not None:
         raise ValidationError("Спринты не должны пересекаться по дате.")
     await sprint.create()
-    workplace = await Workplace.find_one(Workplace.id == workplace_id)
-    workplace.sprints.append(Sprint.link_from_id(Binary.from_uuid(sprint.id, UuidRepresentation.STANDARD)))
+    # workplace = await Workplace.find_one(Workplace.id == workplace_id)
+    # workplace.sprints.append(Sprint.link_from_id(Binary.from_uuid(sprint.id, UuidRepresentation.STANDARD)))
+    workplace = await Workplace.find_one(Workplace.id == workplace_id, fetch_links=True)
+    workplace.sprints.append(sprint)
     await workplace.save()
     return SuccessfulResponse()
 
