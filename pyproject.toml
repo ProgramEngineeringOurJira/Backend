@@ -32,6 +32,7 @@ influxdb-client = {version = "^1.37.0", extras = ["async"]}
 redis = "^5.0.0"
 beanie = "^1.22.6"
 bson = "^0.5.10"
+fastapi-mail = "^1.4.1"
 
 
 [build-system]

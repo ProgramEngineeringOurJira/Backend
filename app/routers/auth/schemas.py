@@ -5,7 +5,9 @@ from uuid import UUID
 
 from beanie import Document, Indexed
 from beanie.odm.documents import PydanticObjectId
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
+
+from app.core import UserRegister
 
 
 class Token(BaseModel):
@@ -21,11 +23,6 @@ class TokenType(StrEnum):
 class TokenData(BaseModel):
     email: Optional[str] = None
     exp: Optional[datetime] = None
-
-
-class UserRegister(BaseModel):
-    email: EmailStr
-    password: str
 
 
 class User(Document, UserRegister):
