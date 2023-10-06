@@ -10,4 +10,4 @@ class MongoManager:
     """
 
     def get_async_client(self) -> AsyncIOMotorClient:
-        return AsyncIOMotorClient(str(mongo_settings.MONGO_URL))
+        return AsyncIOMotorClient(str(mongo_settings.MONGO_URL), uuidRepresentation="standard")

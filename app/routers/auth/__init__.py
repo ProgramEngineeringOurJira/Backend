@@ -1,4 +1,3 @@
-from .schemas import User, UserAssignedWorkplace, UserRegister  # isort: skip
-from .router import router
+from .schemas import User, UserAssignedWorkplace
 
-__all__ = ["User", "UserRegister", "UserAssignedWorkplace", "router"]
+__all__ = ["User", "UserAssignedWorkplace"]
