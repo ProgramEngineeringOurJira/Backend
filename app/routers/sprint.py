@@ -8,10 +8,9 @@ from fastapi import APIRouter, Body, Depends, Path, status
 from app.auth.oauth2 import admin, guest
 from app.core.exceptions import SprintNotFoundError, ValidationError
 from app.routers.auth import User
-from app.routers.auth.schemas import SuccessfulResponse
-from app.routers.workplace import Workplace
-
-from .schemas import Sprint, SprintCreation
+from app.schemas.auth import SuccessfulResponse
+from app.schemas.sprint import Sprint, SprintCreation
+from app.schemas.workplace import Workplace
 
 router = APIRouter(tags=["Sprint"])
 

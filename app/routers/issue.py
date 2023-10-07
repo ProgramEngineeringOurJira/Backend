@@ -9,12 +9,11 @@ from fastapi import APIRouter, Body, Depends, Path, status
 
 from app.auth.oauth2 import guest, member
 from app.core.exceptions import IssueNotFoundError, SprintNotFoundError, ValidationError
-from app.routers.auth import User
-from app.routers.auth.schemas import Role, SuccessfulResponse
-from app.routers.sprint import Sprint
-from app.routers.workplace import Workplace
+from app.schemas.auth import SuccessfulResponse, User
+from app.schemas.sprint import Sprint
+from app.schemas.workplace import Role, Workplace
 
-from .schemas import Issue, IssueCreation
+from ..schemas.issue import Issue, IssueCreation
 
 router = APIRouter(tags=["Issue"])
 

@@ -1,17 +1,30 @@
+from enum import StrEnum
 from typing import List, Optional
 from uuid import UUID, uuid4
 
 from beanie import Document, Link
+from beanie.odm.documents import PydanticObjectId
 from pydantic import BaseModel, Field
 
-from app.routers.auth.schemas import UserAssignedWorkplace
-from app.routers.issue import Issue
-from app.routers.sprint import Sprint
+from .issue import Issue
+from .sprint import Sprint
 
 
 class WorkplaceCreation(BaseModel):
     name: str
     description: Optional[str] = None
+
+
+class Role(StrEnum):
+    ADMIN = "ADMIN"
+    MEMBER = "MEMBER"
+    GUEST = "GUEST"
+
+
+class UserAssignedWorkplace(Document):
+    user_id: PydanticObjectId
+    workplace_id: UUID
+    role: Role
 
 
 def states():

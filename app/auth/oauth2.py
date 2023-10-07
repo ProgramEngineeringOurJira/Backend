@@ -6,7 +6,8 @@ from fastapi.security import HTTPBearer
 
 from app.auth.jwt_token import decode_token
 from app.core.exceptions import ForbiddenException, Unauthorized
-from app.routers.auth.schemas import Role, User, UserAssignedWorkplace
+from app.schemas.auth import User
+from app.schemas.workplace import Role, UserAssignedWorkplace
 
 oauth2_scheme = HTTPBearer()
 

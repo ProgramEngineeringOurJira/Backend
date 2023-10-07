@@ -4,8 +4,7 @@ from app.auth.hash import get_password_hash, verify_password
 from app.auth.jwt_token import create_access_token, create_refresh_token
 from app.auth.oauth2 import get_current_user
 from app.core.exceptions import UserFoundException
-
-from .schemas import SuccessfulResponse, Token, TokenData, User, UserRegister
+from app.schemas.auth import SuccessfulResponse, Token, TokenData, User, UserRegister
 
 router = APIRouter(tags=["Auth"])
 

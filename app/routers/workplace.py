@@ -5,9 +5,8 @@ from fastapi import APIRouter, Body, Depends, Path, status
 
 from app.auth.oauth2 import admin, get_current_user, guest
 from app.core.exceptions import WorkplaceNotFoundError
-from app.routers.auth.schemas import Role, SuccessfulResponse, User, UserAssignedWorkplace
-
-from .schemas import Workplace, WorkplaceCreation
+from app.schemas.auth import SuccessfulResponse, User
+from app.schemas.workplace import Role, UserAssignedWorkplace, Workplace, WorkplaceCreation
 
 router = APIRouter(tags=["Workplace"])
 

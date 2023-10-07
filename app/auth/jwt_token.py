@@ -6,7 +6,7 @@ from pydantic import ValidationError
 
 from app.config import client_api_settings
 from app.core.exceptions import Unauthorized
-from app.routers.auth.schemas import TokenData
+from app.schemas.auth import TokenData
 
 
 def create_access_token(data: TokenData) -> str:

@@ -10,7 +10,8 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app.config import ClientAPISettings, client_api_settings
 from app.core import CommonException, InternalServerError, MongoManager, Redis
-from app.routers import __beanie_models__, list_of_routes
+from app.routers import list_of_routes
+from app.schemas import __beanie_models__
 
 logger = logger = logging.getLogger(__name__)
 
