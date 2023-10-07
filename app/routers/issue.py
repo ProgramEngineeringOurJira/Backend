@@ -8,11 +8,8 @@ from fastapi import APIRouter, Body, Depends, Path, status
 
 from app.auth.oauth2 import guest, member
 from app.core.exceptions import IssueNotFoundError, SprintNotFoundError, ValidationError
-from app.schemas.auth import SuccessfulResponse, User
-from app.schemas.sprint import Sprint
-from app.schemas.workplace import Role, Workplace
-
-from ..schemas.issue import Issue, IssueCreation
+from app.schemas.documents import Issue, Role, Sprint, User, Workplace
+from app.schemas.models.models import IssueCreation, SuccessfulResponse
 
 router = APIRouter(tags=["Issue"])
 
@@ -40,7 +37,12 @@ async def create_issue(
     return SuccessfulResponse()
 
 
-@router.get("/{workplace_id}/issues/{issue_id}", response_model=Issue, status_code=status.HTTP_200_OK)
+@router.get(
+    "/{workplace_id}/issues/{issue_id}",
+    response_model=Issue,
+    status_code=status.HTTP_200_OK,
+    response_model_exclude="workplace_id",
+)
 async def get_issue(issue_id: UUID = Path(...), user: User = Depends(guest)):
     issue = await Issue.find_one(Issue.id == issue_id)
     if issue is None:

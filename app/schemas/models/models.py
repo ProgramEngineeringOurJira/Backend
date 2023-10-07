@@ -1,15 +1,20 @@
 from datetime import datetime
-from typing import List
-from uuid import UUID, uuid4
+from typing import Optional
+from uuid import UUID
 
-from beanie import Document, Link
 from pydantic import BaseModel, Field, model_validator
 
-from app.core.exceptions import ValidationError
+from app.core import ValidationError
 
-from .issue import Issue
+from ..types import Priority
 
-# from .workplace import Workplace
+
+class IssueCreation(BaseModel):
+    name: str
+    text: str
+    priority: Priority
+    state: str
+    sprint_id: Optional[UUID] = None
 
 
 class SprintCreation(BaseModel):
@@ -24,8 +29,10 @@ class SprintCreation(BaseModel):
         return self
 
 
-class Sprint(Document, SprintCreation):
-    # workplace_id: BackLink[Workplace]
-    workplace_id: UUID
-    id: UUID = Field(default_factory=uuid4)
-    issues: List[Link[Issue]] = Field(default_factory=list)
+class WorkplaceCreation(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+
+class SuccessfulResponse(BaseModel):
+    details: str = Field("Выполнено", title="Статус операции")

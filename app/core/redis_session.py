@@ -1,7 +1,7 @@
 import redis.asyncio as redis
 
 from app.config import email_settings, redis_settings
-from app.schemas.auth import UserRegister
+from app.schemas.models.auth import UserRegister
 
 
 class Redis:
