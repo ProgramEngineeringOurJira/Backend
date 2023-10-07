@@ -25,7 +25,7 @@ class RoleChecker:
 
     async def __call__(self, user: User = Depends(get_current_user), workplace_id: UUID = Path(...)) -> str:
         workplace = (
-            await UserAssignedWorkplace.find(UserAssignedWorkplace.user_id == user.id)
+            await UserAssignedWorkplace.find(UserAssignedWorkplace.user.id == user.id)
             .find(UserAssignedWorkplace.workplace_id == workplace_id)
             .first_or_none()
         )

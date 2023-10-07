@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
@@ -9,12 +9,16 @@ from app.core import ValidationError
 from ..types import Priority
 
 
-class IssueCreation(BaseModel):
+class IssueBase(BaseModel):
     name: str
     text: str
     priority: Priority
     state: str
+
+
+class IssueCreation(IssueBase):
     sprint_id: Optional[UUID] = None
+    users: List[UUID]
 
 
 class SprintCreation(BaseModel):

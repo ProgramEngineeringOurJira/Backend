@@ -1,11 +1,11 @@
 from typing import List
 from uuid import UUID
 
-from beanie.odm.operators.find.logical import And, Or
+from beanie import DeleteRules
 from fastapi import APIRouter, Body, Depends, Path, status
 
 from app.auth.oauth2 import admin, guest
-from app.core.exceptions import SprintNotFoundError, ValidationError
+from app.core.exceptions import SprintNotFoundError
 from app.routers.auth import User
 from app.schemas.documents import Sprint, SprintCreation, Workplace
 from app.schemas.models.models import SuccessfulResponse
@@ -17,17 +17,8 @@ router = APIRouter(tags=["Sprint"])
 async def create_sprint(
     sprint_creation: SprintCreation = Body(...), workplace_id: UUID = Path(...), user: User = Depends(admin)
 ):
-    sprint = Sprint(**sprint_creation.model_dump(), workplace_id=workplace_id)
-    find_sprint = await Sprint.find_one(
-        Sprint.workplace_id == workplace_id,
-        Or(
-            And(Sprint.start_date >= sprint_creation.start_date, Sprint.start_date < sprint_creation.end_date),
-            And(Sprint.end_date > sprint_creation.start_date, Sprint.end_date <= sprint_creation.end_date),
-            And(Sprint.start_date <= sprint_creation.start_date, Sprint.end_date >= sprint_creation.end_date),
-        ),
-    )
-    if find_sprint is not None:
-        raise ValidationError("Спринты не должны пересекаться по дате.")
+    await Sprint.validate_creation(sprint_creation, workplace_id)
+    sprint = Sprint(**sprint_creation.model_dump())
     await sprint.create()
     workplace = await Workplace.find_one(Workplace.id == workplace_id, fetch_links=True)
     workplace.sprints.append(sprint)
@@ -36,8 +27,8 @@ async def create_sprint(
 
 
 @router.get("/{workplace_id}/sprints/{sprint_id}", response_model=Sprint, status_code=status.HTTP_200_OK)
-async def get_sprint(sprint_id: UUID = Path(...), user: User = Depends(guest)):
-    sprint = await Sprint.find(Sprint.id == sprint_id).first_or_none()
+async def get_sprint(workplace_id: UUID = Path(...), sprint_id: UUID = Path(...), user: User = Depends(guest)):
+    sprint = await Sprint.find_one(Sprint.id == sprint_id, Sprint.workplace.id == workplace_id, fetch_links=True)
     if sprint is None:
         raise SprintNotFoundError("Такого спринта не найдено.")
     return sprint
@@ -47,7 +38,7 @@ async def get_sprint(sprint_id: UUID = Path(...), user: User = Depends(guest)):
 async def get_sprints(
     workplace_id: UUID = Path(...), skip: int = Path(...), limit: int = Path(...), user: User = Depends(guest)
 ):
-    sprints = await Sprint.find_all(Sprint.workplace_id == workplace_id).skip(skip).limit(limit).to_list()
+    sprints = await Sprint.find(Sprint.workplace.id == workplace_id, fetch_links=True).skip(skip).limit(limit).to_list()
     return sprints
 
 
@@ -61,31 +52,18 @@ async def edit_sprint(
     sprint = await Sprint.find_one(Sprint.id == sprint_id)
     if sprint is None:
         raise SprintNotFoundError("Такого спринта не найдено.")
-    find_sprint = await Sprint.find_one(
-        Sprint.workplace_id == workplace_id,
-        Sprint.id != sprint_id,
-        Or(
-            And(Sprint.start_date >= sprint_creation.start_date, Sprint.start_date < sprint_creation.end_date),
-            And(Sprint.end_date > sprint_creation.start_date, Sprint.end_date <= sprint_creation.end_date),
-            And(Sprint.start_date <= sprint_creation.start_date, Sprint.end_date >= sprint_creation.end_date),
-        ),
-    )
-    if find_sprint is not None:
-        raise ValidationError("Спринты не должны пересекаться по дате.")
+    await Sprint.validate_creation(sprint_creation, workplace_id, sprint_id)
     await sprint.update({"$set": sprint_creation.model_dump()})
     return SuccessfulResponse()
 
 
 @router.delete("/{workplace_id}/sprints/{sprint_id}", response_model=None, status_code=status.HTTP_204_NO_CONTENT)
 async def delete_sprint(workplace_id: UUID = Path(...), sprint_id: UUID = Path(...), user: User = Depends(admin)):
+    workplace = await Workplace.find_one(Workplace.id == workplace_id, fetch_links=True)
+    workplace.sprints.remove(sprint_id)
+    await workplace.save()
     sprint = await Sprint.find_one(Sprint.id == sprint_id, fetch_links=True)
     if sprint is None:
         raise SprintNotFoundError("Такого спринта не найдено.")
-    for issue in sprint.issues:
-        issue.sprint_id = None
-        await issue.save()
-    workplace = await Workplace.find_one(Workplace.id == workplace_id, fetch_links=True)
-    workplace.sprints.remove(sprint)
-    await workplace.save()
-    await sprint.delete()
+    await sprint.delete(link_rule=DeleteRules.DELETE_LINKS)
     return None
