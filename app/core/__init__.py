@@ -2,6 +2,7 @@ from .exceptions import (
     BadRequest,
     CommonException,
     DoNotUsuRefreshToken,
+    EmailVerificationException,
     InternalServerError,
     IssueNotFoundError,
     NoRefreshToken,
@@ -28,4 +29,5 @@ __all__ = [
     "WorkplaceNotFoundError",
     "ValidationError",
     "UserNotFoundError",
+    "EmailVerificationException",
 ]

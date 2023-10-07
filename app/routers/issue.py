@@ -4,7 +4,6 @@ from uuid import UUID
 from beanie import DeleteRules
 from beanie.odm.documents import PydanticObjectId
 from beanie.operators import In
-from bson import Binary, UuidRepresentation
 from fastapi import APIRouter, Body, Depends, Path, status
 
 from app.auth.oauth2 import guest, member
@@ -27,15 +26,15 @@ async def create_issue(
         raise ValidationError("Указанного статуса не существует.")
     issue = Issue(**issue_creation.model_dump(), workplace_id=workplace_id, author_id=user.id)
     if issue_creation.sprint_id is not None:
-        sprint = await Sprint.find_one(Sprint.id == issue_creation.sprint_id)
+        sprint = await Sprint.find_one(Sprint.id == issue_creation.sprint_id, fetch_links=True)
         if sprint is None:
             raise SprintNotFoundError("Такого спринта не найдено.")
         if sprint.workplace_id != workplace_id:
             raise ValidationError("Спринт должен находиться в том же воркплейсе.")
-        sprint.issues.append(Issue.link_from_id(Binary.from_uuid(issue.id, UuidRepresentation.STANDARD)))
+        sprint.issues.append(issue)
         await sprint.save()
     workplace = await Workplace.find_one(Workplace.id == workplace_id)
-    workplace.issues.append(Issue.link_from_id(Binary.from_uuid(issue.id, UuidRepresentation.STANDARD)))
+    workplace.issues.append(issue)
     await workplace.save()
     await issue.create()
     return SuccessfulResponse()
@@ -74,19 +73,18 @@ async def edit_issue(
     issue = await Issue.find_one(Issue.id == issue_id)
     if issue is None:
         raise IssueNotFoundError("Такой задачи не найдено.")
-    link = Issue.link_from_id(Binary.from_uuid(issue.id, UuidRepresentation.STANDARD))
     if issue_creation.sprint_id != issue.sprint_id:
         if issue.sprint_id is not None:
-            old_sprint = await Sprint.find_one(Sprint.id == issue.sprint_id)
-            old_sprint.issues = [iss for iss in old_sprint.issues if iss.ref != link.ref]
+            old_sprint = await Sprint.find_one(Sprint.id == issue.sprint_id, fetch_links=True)
+            old_sprint.issues.remove(issue)
             await old_sprint.save()
         if issue_creation.sprint_id is not None:
-            sprint = await Sprint.find_one(Sprint.id == issue_creation.sprint_id)
+            sprint = await Sprint.find_one(Sprint.id == issue_creation.sprint_id, fetch_links=True)
             if sprint is None:
                 raise SprintNotFoundError("Такого спринта не найдено.")
             if sprint.workplace_id != workplace_id:
                 raise ValidationError("Спринт должен находиться в том же воркплейсе.")
-            sprint.issues.append(link)
+            sprint.issues.append(issue)
             await sprint.save()
     await issue.update({"$set": issue_creation.model_dump()})
     return SuccessfulResponse()
@@ -97,13 +95,12 @@ async def delete_issue(issue_id: UUID = Path(...), user: User = Depends(member))
     issue = await Issue.find_one(Issue.id == issue_id, fetch_links=True)
     if issue is None:
         raise IssueNotFoundError("Такой задачи не найдено.")
-    link = Issue.link_from_id(Binary.from_uuid(issue.id, UuidRepresentation.STANDARD))
     if issue.sprint_id is not None:
-        sprint = await Sprint.find_one(Sprint.id == issue.sprint_id)
-        sprint.issues = [iss for iss in sprint.issues if iss.ref != link.ref]
+        sprint = await Sprint.find_one(Sprint.id == issue.sprint_id, fetch_links=True)
+        sprint.issues.remove(issue)
         await sprint.save()
-    workplace = await Workplace.find_one(Workplace.id == issue.workplace_id)
-    workplace.issues = [iss for iss in workplace.issues if iss.ref != link.ref]
+    workplace = await Workplace.find_one(Workplace.id == issue.workplace_id, fetch_links=True)
+    workplace.issues.remove(issue)
     await workplace.save()
     await issue.delete(link_rule=DeleteRules.DELETE_LINKS)
     return None

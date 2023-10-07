@@ -2,7 +2,6 @@ from typing import List
 from uuid import UUID
 
 from beanie.odm.operators.find.logical import And, Or
-from bson import Binary, UuidRepresentation
 from fastapi import APIRouter, Body, Depends, Path, status
 
 from app.auth.oauth2 import admin, guest
@@ -31,8 +30,6 @@ async def create_sprint(
     if find_sprint is not None:
         raise ValidationError("Спринты не должны пересекаться по дате.")
     await sprint.create()
-    # workplace = await Workplace.find_one(Workplace.id == workplace_id)
-    # workplace.sprints.append(Sprint.link_from_id(Binary.from_uuid(sprint.id, UuidRepresentation.STANDARD)))
     workplace = await Workplace.find_one(Workplace.id == workplace_id, fetch_links=True)
     workplace.sprints.append(sprint)
     await workplace.save()
@@ -88,9 +85,8 @@ async def delete_sprint(workplace_id: UUID = Path(...), sprint_id: UUID = Path(.
     for issue in sprint.issues:
         issue.sprint_id = None
         await issue.save()
-    workplace = await Workplace.find_one(Workplace.id == workplace_id)
-    link = Sprint.link_from_id(Binary.from_uuid(sprint.id, UuidRepresentation.STANDARD))
-    workplace.sprints = [spr for spr in workplace.sprints if spr.ref != link.ref]
+    workplace = await Workplace.find_one(Workplace.id == workplace_id, fetch_links=True)
+    workplace.sprints.remove(sprint)
     await workplace.save()
     await sprint.delete()
     return None
