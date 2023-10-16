@@ -5,8 +5,8 @@ from app.routers.workplace import router as workplace_router
 
 list_of_routes = [
     register_router,
-    sprint_router,
     workplace_router,
+    sprint_router,
     issue_router,
 ]
 

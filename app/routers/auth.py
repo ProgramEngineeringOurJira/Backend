@@ -1,8 +1,9 @@
 import json
-from uuid import uuid4
+from typing import List
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, Request, status
 from fastapi.responses import RedirectResponse
+from beanie.operators import In
 
 from app.auth.hash import get_password_hash, verify_password
 from app.auth.jwt_token import create_access_token, create_refresh_token
@@ -11,9 +12,9 @@ from app.config import client_api_settings
 from app.core.email import Email
 from app.core.exceptions import EmailVerificationException, UserFoundException
 from app.core.redis_session import Redis
-from app.schemas.documents import User
+from app.schemas.documents import User, Workplace
 from app.schemas.models.auth import Token, TokenData, UserRegister
-from app.schemas.models.models import SuccessfulResponse
+from app.schemas.models import SuccessfulResponse
 
 router = APIRouter(tags=["Auth"])
 
@@ -51,12 +52,9 @@ async def register_user(
     if user is not None:
         raise UserFoundException("Юзер уже существует")
     # Отправка на почту
-    uuid = str(uuid4())
-    url = f"{request.url.scheme}://{request.client.host}:{request.url.port}/verifyemail/{uuid}"
-    await redis.set_uuid_email(uuid, user_register)
-    background_tasks.add_task(email.sendMail, url, user_register.email)
+    background_tasks.add_task(email.sendMail, request,redis,user_register)
 
-    return SuccessfulResponse(details=uuid)
+    return SuccessfulResponse()
 
 
 @router.get("/verifyemail/{token}", status_code=status.HTTP_200_OK)

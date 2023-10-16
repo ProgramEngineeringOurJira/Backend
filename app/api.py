@@ -30,10 +30,10 @@ def get_app() -> FastAPI:
     """
     Creates application and all dependable objects.
     """
-    description = """Cервис реализующий backend jira"""
+    description = """Cервис реализующий backend Krista"""
 
     application = FastAPI(
-        title="jira",
+        title="Krista",
         description=description,
         docs_url="/swagger",
         openapi_url="/openapi",

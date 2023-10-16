@@ -1,33 +1,33 @@
 from typing import List
 from uuid import UUID
 
-from beanie import DeleteRules
+from beanie import DeleteRules, WriteRules
 from fastapi import APIRouter, Body, Depends, Path, status
 
 from app.auth.oauth2 import admin, guest
 from app.core.exceptions import SprintNotFoundError
-from app.routers.auth import User
-from app.schemas.documents import Sprint, SprintCreation, Workplace
-from app.schemas.models.models import SuccessfulResponse
+from app.schemas.documents import Sprint, SprintCreation, Workplace, UserAssignedWorkplace
+from app.schemas.models import SuccessfulResponse
 
 router = APIRouter(tags=["Sprint"])
 
 
 @router.post("/{workplace_id}/sprints", response_model=SuccessfulResponse, status_code=status.HTTP_201_CREATED)
 async def create_sprint(
-    sprint_creation: SprintCreation = Body(...), workplace_id: UUID = Path(...), user: User = Depends(admin)
+    sprint_creation: SprintCreation = Body(...), 
+    workplace_id: UUID = Path(...), 
+    user: UserAssignedWorkplace = Depends(admin)
 ):
     await Sprint.validate_creation(sprint_creation, workplace_id)
-    sprint = Sprint(**sprint_creation.model_dump())
-    await sprint.create()
     workplace = await Workplace.find_one(Workplace.id == workplace_id, fetch_links=True)
-    workplace.sprints.append(sprint)
-    await workplace.save()
+    workplace.sprints.append(Sprint(**sprint_creation.model_dump()))
+    await workplace.save(link_rule=WriteRules.WRITE)
     return SuccessfulResponse()
 
 
 @router.get("/{workplace_id}/sprints/{sprint_id}", response_model=Sprint, status_code=status.HTTP_200_OK)
-async def get_sprint(workplace_id: UUID = Path(...), sprint_id: UUID = Path(...), user: User = Depends(guest)):
+async def get_sprint(workplace_id: UUID = Path(...), sprint_id: UUID = Path(...), 
+                     user: UserAssignedWorkplace = Depends(guest)):
     sprint = await Sprint.find_one(Sprint.id == sprint_id, Sprint.workplace.id == workplace_id, fetch_links=True)
     if sprint is None:
         raise SprintNotFoundError("Такого спринта не найдено.")
@@ -36,7 +36,8 @@ async def get_sprint(workplace_id: UUID = Path(...), sprint_id: UUID = Path(...)
 
 @router.get("/{workplace_id}/sprints/{skip}/{limit}", response_model=List[Sprint], status_code=status.HTTP_200_OK)
 async def get_sprints(
-    workplace_id: UUID = Path(...), skip: int = Path(...), limit: int = Path(...), user: User = Depends(guest)
+    workplace_id: UUID = Path(...), skip: int = Path(...), limit: int = Path(...),
+    user: UserAssignedWorkplace = Depends(guest)
 ):
     sprints = await Sprint.find(Sprint.workplace.id == workplace_id, fetch_links=True).skip(skip).limit(limit).to_list()
     return sprints
@@ -44,10 +45,8 @@ async def get_sprints(
 
 @router.put("/{workplace_id}/sprints/{sprint_id}", response_model=SuccessfulResponse, status_code=status.HTTP_200_OK)
 async def edit_sprint(
-    sprint_creation: SprintCreation = Body(...),
-    workplace_id: UUID = Path(...),
-    sprint_id: UUID = Path(...),
-    user: User = Depends(admin),
+    sprint_creation: SprintCreation = Body(...),workplace_id: UUID = Path(...),sprint_id: UUID = Path(...),
+    user: UserAssignedWorkplace = Depends(admin),
 ):
     sprint = await Sprint.find_one(Sprint.id == sprint_id)
     if sprint is None:
@@ -58,12 +57,10 @@ async def edit_sprint(
 
 
 @router.delete("/{workplace_id}/sprints/{sprint_id}", response_model=None, status_code=status.HTTP_204_NO_CONTENT)
-async def delete_sprint(workplace_id: UUID = Path(...), sprint_id: UUID = Path(...), user: User = Depends(admin)):
-    workplace = await Workplace.find_one(Workplace.id == workplace_id, fetch_links=True)
-    workplace.sprints.remove(sprint_id)
-    await workplace.save()
+async def delete_sprint(workplace_id: UUID = Path(...), sprint_id: UUID = Path(...), 
+                        user: UserAssignedWorkplace = Depends(admin)):
     sprint = await Sprint.find_one(Sprint.id == sprint_id, fetch_links=True)
     if sprint is None:
         raise SprintNotFoundError("Такого спринта не найдено.")
-    await sprint.delete(link_rule=DeleteRules.DELETE_LINKS)
+    await sprint.delete() 
     return None
