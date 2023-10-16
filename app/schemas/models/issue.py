@@ -1,7 +1,8 @@
 from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel,Field
+from pydantic import BaseModel, Field
+
 from ..types import Priority
 
 
@@ -16,10 +17,11 @@ class IssueCreation(IssueBase):
     sprint_id: Optional[UUID] = None
     implementers: List[UUID] = Field(default=list())
 
+
 class IssueUpdate(BaseModel):
     name: Optional[str]
     text: Optional[str]
     priority: Optional[Priority]
     state: Optional[str]
     sprint_id: Optional[UUID] = None
-    implementers: Optional[List[UUID]] 
+    implementers: Optional[List[UUID]]

@@ -2,14 +2,14 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID, uuid4
 
-from beanie import BackLink, Document, Indexed, Link, Delete, before_event, Save
+from beanie import BackLink, Delete, Document, Indexed, Link, before_event
 from beanie.odm.operators.find.logical import And, Or
 from pydantic import Field
 
 from app.core.exceptions import ValidationError
 
-from .models.auth import UserRegister
 from .models import IssueBase, SprintCreation, WorkplaceCreation
+from .models.auth import UserRegister
 from .types import Role, states
 
 
@@ -40,11 +40,10 @@ class UserAssignedWorkplace(Document):
     user: Link["User"]
     workplace: BackLink["Workplace"] = Field(original_field="users", exclude=True)
     role: Role
-    
+
     @before_event(Delete)
     async def delete_refs(self):
         self.user = None
-
 
     def __hash__(self):
         return hash(self.id)
@@ -68,7 +67,7 @@ class Sprint(Document, SprintCreation):
     id: UUID = Field(default_factory=uuid4)
     workplace: BackLink["Workplace"] = Field(original_field="sprints", exclude=True)
     issues: List[Link["Issue"]] = Field(default_factory=list)
-    
+
     @before_event(Delete)
     async def delete_ref_workplace(self):
         self.workplace.sprints.remove(self.id)
@@ -89,7 +88,6 @@ class Sprint(Document, SprintCreation):
         )
         if find_sprint is not None:
             raise ValidationError("Спринты не должны пересекаться по дате.")
-    
 
     def __eq__(self, other):
         if not isinstance(other, (Sprint, UUID)):
@@ -103,7 +101,7 @@ class Issue(Document, IssueBase):
     creation_date: datetime = Field(default_factory=datetime.now)
     workplace: BackLink["Workplace"] = Field(original_field="issues", exclude=True)
     author: Optional[Link["UserAssignedWorkplace"]]
-    sprint: Optional[BackLink["Sprint"]] = Field(default=None,original_field="issues", exclude=True)
+    sprint: Optional[BackLink["Sprint"]] = Field(default=None, original_field="issues", exclude=True)
     implementers: List[Link["UserAssignedWorkplace"]] = Field(default_factory=list)
     # comments: List[Link["Comment"]]
 
@@ -111,12 +109,12 @@ class Issue(Document, IssueBase):
     async def delete_refs(self):
         self.workplace.issues.remove(self.id)
         await self.workplace.save()
-        if self.sprint != None:
+        if self.sprint is None:
             self.sprint.issues.remove(self.id)
             self.sprint.save()
         self.author = None
         self.implementers = []
-    
+
     def __eq__(self, other):
         if not isinstance(other, (Issue, UUID)):
             return False

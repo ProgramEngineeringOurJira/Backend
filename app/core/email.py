@@ -1,7 +1,7 @@
 import uuid
+
 from fastapi import Request
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
-from pydantic import EmailStr
 
 from app.config import email_settings
 from app.core.redis_session import Redis
@@ -30,7 +30,7 @@ class Email:
     # Конструктор сообщения по конфигурации
     fm: FastMail = FastMail(conf)
 
-    async def sendMail(self, request: Request,redis: Redis,user_register: UserRegister):
+    async def sendMail(self, request: Request, redis: Redis, user_register: UserRegister):
         # Определяет тело письма и его получателя
         uuid_id = str(uuid.uuid4())
         url = f"{request.url.scheme}://{request.client.host}:{request.url.port}/v1/verifyemail/{uuid_id}"

@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from beanie import DeleteRules, WriteRules 
+from beanie import DeleteRules, WriteRules
 from fastapi import APIRouter, Body, Depends, Path, status
 
 from app.auth.oauth2 import admin, get_current_user, guest
@@ -31,7 +31,9 @@ async def get_workplace(workplace_id: UUID = Path(...), user: UserAssignedWorkpl
 
 @router.put("/workplaces/{workplace_id}", response_model=SuccessfulResponse, status_code=status.HTTP_200_OK)
 async def edit_workplace(
-    workplace_creation: WorkplaceCreation = Body(...), workplace_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(admin)
+    workplace_creation: WorkplaceCreation = Body(...),
+    workplace_id: UUID = Path(...),
+    user: UserAssignedWorkplace = Depends(admin),
 ):
     workplace = await Workplace.find_one(Workplace.id == workplace_id)
     await workplace.update({"$set": workplace_creation.model_dump()})

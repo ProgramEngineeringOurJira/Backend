@@ -1,14 +1,14 @@
 from typing import List
 from uuid import UUID
 
-from beanie import DeleteRules, WriteRules
-from fastapi import APIRouter, Body, Depends, Path, status
-from asyncstdlib import map as amap
 from asyncstdlib import list as alist
+from asyncstdlib import map as amap
+from beanie import WriteRules
+from fastapi import APIRouter, Body, Depends, Path, status
+
 from app.auth.oauth2 import guest, member
 from app.core.exceptions import IssueNotFoundError, SprintNotFoundError, UserNotFoundError, ValidationError
-from app.queries.issue import update_issue
-from app.schemas.documents import Issue, Sprint,Workplace, UserAssignedWorkplace
+from app.schemas.documents import Issue, Sprint, UserAssignedWorkplace, Workplace
 from app.schemas.models import IssueCreation, SuccessfulResponse
 
 router = APIRouter(tags=["Issue"])
@@ -16,26 +16,28 @@ router = APIRouter(tags=["Issue"])
 
 @router.post("/{workplace_id}/issues", response_model=SuccessfulResponse, status_code=status.HTTP_201_CREATED)
 async def create_issue(
-    issue_creation: IssueCreation = Body(...), 
+    issue_creation: IssueCreation = Body(...),
     workplace_id: UUID = Path(...),
-    user: UserAssignedWorkplace = Depends(member)
+    user: UserAssignedWorkplace = Depends(member),
 ):
     workplace = await Workplace.find_one(Workplace.id == workplace_id, fetch_links=True)
-    sprint = await Sprint.find_one(Sprint.workplace.id == workplace_id,
-                                   Sprint.id == issue_creation.sprint_id,
-                                   fetch_links=True)
-    implementers = await alist(amap(lambda id: UserAssignedWorkplace.get(id),issue_creation.implementers))
+    sprint = await Sprint.find_one(
+        Sprint.workplace.id == workplace_id, Sprint.id == issue_creation.sprint_id, fetch_links=True
+    )
+    implementers = await alist(amap(lambda id: UserAssignedWorkplace.get(id), issue_creation.implementers))
     if len(implementers) != len(issue_creation.implementers):
         raise UserNotFoundError("Пользователь не найден в воркплейсе")
     if not set(implementers).issubset(workplace.users):
-            raise ValidationError("Пользователь не принадлежит worplace")
+        raise ValidationError("Пользователь не принадлежит worplace")
     if issue_creation.state not in workplace.states:
         raise ValidationError("Указанного статуса нет существует.")
-    if sprint == None and issue_creation.sprint_id != None:
+    if sprint is None and issue_creation.sprint_id is not None:
         raise SprintNotFoundError("Нет такого спринта")
-    issue = Issue(**issue_creation.model_dump(exclude={'implementers'}), author=user,implementers=implementers,sprint=None)
+    issue = Issue(
+        **issue_creation.model_dump(exclude={"implementers"}), author=user, implementers=implementers, sprint=None
+    )
     workplace.issues.append(issue)
-    if sprint != None:
+    if sprint is not None:
         sprint.issues.append(issue)
         await sprint.save(link_rule=WriteRules.WRITE)
     await workplace.save(link_rule=WriteRules.WRITE)
@@ -47,8 +49,7 @@ async def create_issue(
     response_model=Issue,
     status_code=status.HTTP_200_OK,
 )
-async def get_issue(issue_id: UUID = Path(...), 
-                    user: UserAssignedWorkplace = Depends(guest)):
+async def get_issue(issue_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(guest)):
     issue = await Issue.find_one(Issue.id == issue_id, fetch_links=True)
     if issue is None:
         raise IssueNotFoundError("Такой задачи не найдено.")
@@ -56,15 +57,13 @@ async def get_issue(issue_id: UUID = Path(...),
 
 
 @router.get("/{workplace_id}/sprints/{sprint_id}/issues", response_model=List[Issue], status_code=status.HTTP_200_OK)
-async def get_sprint_issues(sprint_id: UUID = Path(...), 
-                            user: UserAssignedWorkplace = Depends(guest)):
+async def get_sprint_issues(sprint_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(guest)):
     issue = await Issue.find(Issue.sprint_id == sprint_id).to_list()
     return issue
 
 
 @router.get("/{workplace_id}/issues", response_model=List[Issue], status_code=status.HTTP_200_OK)
-async def get_workplace_issues(workplace_id: UUID = Path(...), 
-                               user: UserAssignedWorkplace = Depends(guest)):
+async def get_workplace_issues(workplace_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(guest)):
     issue = await Issue.find(Issue.workplace_id == workplace_id).to_list()
     return issue
 
@@ -81,18 +80,18 @@ async def edit_issue(
         raise IssueNotFoundError("Такой задачи не найдено.")
     if issue_creation.state not in issue.workplace.states:
         raise ValidationError("Указанного статуса нет существует.")
-    implementers = await alist(amap(lambda id: UserAssignedWorkplace.get(id),issue_creation.implementers))
+    implementers = await alist(amap(lambda id: UserAssignedWorkplace.get(id), issue_creation.implementers))
     if len(implementers) != len(issue_creation.implementers):
         raise UserNotFoundError("Пользователь не найден в воркплейсе")
     if not set(implementers).issubset(issue.workplace.users):
-            raise ValidationError("Пользователь не принадлежит worplace")
-    if issue_creation.sprint_id != None:
+        raise ValidationError("Пользователь не принадлежит worplace")
+    if issue_creation.sprint_id is not None:
         # блядь None не робит я в ахуе issue создан в либу, убейте меня время 5 утра я в щи, баскетбол ногой...
-        if issue.sprint == None or issue_creation.sprint_id != issue.sprint.id:
+        if issue.sprint is None or issue_creation.sprint_id != issue.sprint.id:
             issue.sprint.issues.remove(issue.id)
-            sprint = await Sprint.find_one(Sprint.workplace.id == workplace_id,
-                                   Sprint.id == issue_creation.sprint_id,
-                                   fetch_links=True)
+            sprint = await Sprint.find_one(
+                Sprint.workplace.id == workplace_id, Sprint.id == issue_creation.sprint_id, fetch_links=True
+            )
             sprint.issues.append(issue)
             await sprint.save(link_rule=WriteRules.WRITE)
     else:
@@ -103,8 +102,7 @@ async def edit_issue(
 
 
 @router.delete("/{workplace_id}/issues/{issue_id}", response_model=None, status_code=status.HTTP_204_NO_CONTENT)
-async def delete_issue(issue_id: UUID = Path(...), 
-                       user: UserAssignedWorkplace = Depends(member)):
+async def delete_issue(issue_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(member)):
     issue = await Issue.find_one(Issue.id == issue_id, fetch_links=True)
     if issue is None:
         raise IssueNotFoundError("Такой задачи не найдено.")

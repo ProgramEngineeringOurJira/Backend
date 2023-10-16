@@ -5,7 +5,7 @@ from fastapi import Depends, Path
 from fastapi.security import HTTPBearer
 
 from app.auth.jwt_token import decode_token
-from app.core.exceptions import ForbiddenException, Unauthorized,WorkplaceNotFoundError
+from app.core.exceptions import ForbiddenException, Unauthorized, WorkplaceNotFoundError
 from app.schemas.documents import Role, User, UserAssignedWorkplace
 
 oauth2_scheme = HTTPBearer()
@@ -24,10 +24,11 @@ class RoleChecker:
         self.role = role
 
     async def __call__(self, user: User = Depends(get_current_user), workplace_id: UUID = Path(...)) -> str:
-        user_assigned= await UserAssignedWorkplace.find(
+        user_assigned = await UserAssignedWorkplace.find(
             UserAssignedWorkplace.user.id == user.id,
             UserAssignedWorkplace.workplace.id == workplace_id,
-            fetch_links=True).first_or_none()
+            fetch_links=True,
+        ).first_or_none()
         if not user_assigned:
             raise WorkplaceNotFoundError("Worplace не найден")
         if user_assigned.role in self.role:

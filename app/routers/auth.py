@@ -1,9 +1,7 @@
 import json
-from typing import List
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, Request, status
 from fastapi.responses import RedirectResponse
-from beanie.operators import In
 
 from app.auth.hash import get_password_hash, verify_password
 from app.auth.jwt_token import create_access_token, create_refresh_token
@@ -12,9 +10,9 @@ from app.config import client_api_settings
 from app.core.email import Email
 from app.core.exceptions import EmailVerificationException, UserFoundException
 from app.core.redis_session import Redis
-from app.schemas.documents import User, Workplace
-from app.schemas.models.auth import Token, TokenData, UserRegister
+from app.schemas.documents import User
 from app.schemas.models import SuccessfulResponse
+from app.schemas.models.auth import Token, TokenData, UserRegister
 
 router = APIRouter(tags=["Auth"])
 
@@ -52,7 +50,7 @@ async def register_user(
     if user is not None:
         raise UserFoundException("Юзер уже существует")
     # Отправка на почту
-    background_tasks.add_task(email.sendMail, request,redis,user_register)
+    background_tasks.add_task(email.sendMail, request, redis, user_register)
 
     return SuccessfulResponse()
 
