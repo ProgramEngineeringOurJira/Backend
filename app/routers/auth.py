@@ -1,11 +1,18 @@
-from fastapi import APIRouter, Body, Depends, status
+import json
+
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, Request, status
+from fastapi.responses import RedirectResponse
 
 from app.auth.hash import get_password_hash, verify_password
 from app.auth.jwt_token import create_access_token, create_refresh_token
 from app.auth.oauth2 import get_current_user
-from app.core.exceptions import UserFoundException
-
-from .schemas import SuccessfulResponse, Token, TokenData, User, UserRegister
+from app.config import client_api_settings
+from app.core.email import Email
+from app.core.exceptions import EmailVerificationException, UserFoundException
+from app.core.redis_session import Redis
+from app.schemas.documents import User
+from app.schemas.models import SuccessfulResponse
+from app.schemas.models.auth import Token, TokenData, UserRegister
 
 router = APIRouter(tags=["Auth"])
 
@@ -32,15 +39,34 @@ async def refresh_token(user: User = Depends(get_current_user)):
 
 
 @router.post("/register", response_model=SuccessfulResponse, status_code=status.HTTP_201_CREATED)
-async def register_user(user_register: UserRegister):
+async def register_user(
+    user_register: UserRegister,
+    request: Request,
+    background_tasks: BackgroundTasks,
+    redis: Redis = Depends(Redis),
+    email: Email = Depends(Email),
+):
     user = await User.by_email(user_register.email)
     if user is not None:
         raise UserFoundException("Юзер уже существует")
-    # TODO отправка на почту
-    hashed = get_password_hash(user_register.password)
-    user = User(email=user_register.email, password=hashed)
-    await user.create()
+    # Отправка на почту
+    background_tasks.add_task(email.sendMail, request, redis, user_register)
+
     return SuccessfulResponse()
+
+
+@router.get("/verifyemail/{token}", status_code=status.HTTP_200_OK)
+async def verify_email(token: str, redis: Redis = Depends(Redis)):
+    check = await redis.get_user(uuid=token)
+    if check is None:
+        raise EmailVerificationException("Произошла ошибка! Истекло время или неправильный код")
+
+    user_data = json.loads(check)
+    hashed = get_password_hash(user_data["password"])
+    user = User(email=user_data["email"], password=hashed)
+    await user.create()
+
+    return RedirectResponse(client_api_settings.MAIN_URL)
 
 
 @router.get("/profile/", response_model=User, status_code=status.HTTP_200_OK)

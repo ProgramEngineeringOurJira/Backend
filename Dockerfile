@@ -34,3 +34,5 @@ RUN chown -R 1001:1001 /app/data
 RUN chmod 755 /app/data
 
 USER appuser
+
+CMD ["uvicorn", "app.api:app", "--host", "0.0.0.0", "--port", "8080"]

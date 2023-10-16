@@ -10,7 +10,8 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app.config import ClientAPISettings, client_api_settings
 from app.core import CommonException, InternalServerError, MongoManager, Redis
-from app.routers import __beanie_models__, list_of_routes
+from app.routers import list_of_routes
+from app.schemas import __beanie_models__
 
 logger = logger = logging.getLogger(__name__)
 
@@ -29,10 +30,10 @@ def get_app() -> FastAPI:
     """
     Creates application and all dependable objects.
     """
-    description = """Cервис реализующий backend jira"""
+    description = """Cервис реализующий backend Krista"""
 
     application = FastAPI(
-        title="jira",
+        title="Krista",
         description=description,
         docs_url="/swagger",
         openapi_url="/openapi",

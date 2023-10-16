@@ -1,5 +1,21 @@
 version: '3.7'
 services:
+  web:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    volumes:
+      - .:/code
+    ports:
+      - "80:80"
+    depends_on:
+      - redis
+      - mongodb
+    env_file:
+      - .env
+    restart: always
+    networks:
+      - krista-dev
   redis:
     image: 'bitnami/redis:6.2.13'
     expose:
@@ -8,7 +24,7 @@ services:
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
     networks:
-      - jira-jira
+      - krista-dev
 
   mongodb:
     container_name: "mongodb"
@@ -20,13 +36,14 @@ services:
     environment:
       - MONGODB_ROOT_USER=aboba
       - MONGODB_ROOT_PASSWORD=aboba
-      - MONGODB_DATABASE=medvezhiy-ugol
+      - MONGODB_DATABASE=krista
     ports:
       - 27017:27017
     networks:
-      - jira-jira
-networks:
-  jira-jira:
-    name: jira-jira-networks
+      - krista-dev
 volumes:
   mongo-data2:
+  static:
+networks:
+  krista-dev:
+    external: true
