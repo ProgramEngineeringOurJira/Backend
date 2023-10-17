@@ -14,8 +14,8 @@ services:
     env_file:
       - .env
     restart: always
-    #networks:
-    #  - krista-dev
+    networks:
+      - krista-dev
   redis:
     image: 'bitnami/redis:6.2.13'
     expose:
@@ -44,6 +44,6 @@ services:
 volumes:
   mongo-data2:
   static:
-#networks:
-#  krista-dev:
-#    external: true
+networks:
+  krista-dev:
+    external: true
