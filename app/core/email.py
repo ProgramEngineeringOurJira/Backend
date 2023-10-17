@@ -33,7 +33,7 @@ class Email:
     async def sendMail(self, request: Request, redis: Redis, user_register: UserRegister):
         # Определяет тело письма и его получателя
         uuid_id = str(uuid.uuid4())
-        url = f"{request.url.scheme}://{request.client.host}:{request.url.port}/v1/verifyemail/{uuid_id}"
+        url = f"{request.url.scheme}://{request.url.hostname}:{request.url.port}/v1/verifyemail/{uuid_id}"
         await redis.set_uuid_email(uuid_id, user_register)
         message = MessageSchema(
             subject="Welcome",
