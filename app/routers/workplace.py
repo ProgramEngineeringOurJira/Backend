@@ -1,6 +1,8 @@
+from typing import List, Optional
 from uuid import UUID
 
 from beanie import DeleteRules, WriteRules
+from beanie.operators import RegEx
 from fastapi import APIRouter, Body, Depends, Path, status
 
 from app.auth.oauth2 import admin, get_current_user, guest
@@ -46,3 +48,12 @@ async def delete_workplace(workplace_id: UUID = Path(...), user: UserAssignedWor
     workplace = await Workplace.find_one(Workplace.id == workplace_id, fetch_links=True)
     await workplace.delete(link_rule=DeleteRules.DELETE_LINKS)
     return None
+
+@router.get("/workplaces/{workplace_id}/users", response_model=List[UserAssignedWorkplace], status_code=status.HTTP_200_OK)
+async def get_users(prefix_email: str | None = "", workplace_id: UUID = Path(), user: UserAssignedWorkplace = Depends(guest)):
+    users = await UserAssignedWorkplace.find(UserAssignedWorkplace.workplace.id == workplace_id,
+        RegEx(UserAssignedWorkplace.user.email, f"^{prefix_email}"),                  
+        fetch_links=True).to_list()
+    return users
+
+# UserAssignedWorkplace.user.email[:len(prefix_email)] == prefix_email,
