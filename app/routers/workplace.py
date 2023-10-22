@@ -64,4 +64,4 @@ async def get_users(
     return users
 
 
-# UserAssignedWorkplace.user.email[:len(prefix_email)] == prefix_email,
+# TODO: get all user's workplace
