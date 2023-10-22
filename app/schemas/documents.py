@@ -8,8 +8,7 @@ from pydantic import Field
 
 from app.core.exceptions import ValidationError
 
-from .models import IssueBase, SprintCreation, WorkplaceCreation
-from .models.auth import UserRegister
+from .models import CommentBase, IssueBase, SprintCreation, UserRegister, WorkplaceCreation
 from .types import Role, states
 
 
@@ -103,13 +102,13 @@ class Issue(Document, IssueBase):
     author: Optional[Link["UserAssignedWorkplace"]]
     sprint: Optional[BackLink["Sprint"]] = Field(default=None, original_field="issues", exclude=True)
     implementers: List[Link["UserAssignedWorkplace"]] = Field(default_factory=list)
-    # comments: List[Link["Comment"]]
+    comments: List[Link["Comment"]] = Field(default_factory=list)
 
     @before_event(Delete)
     async def delete_refs(self):
         self.workplace.issues.remove(self.id)
         await self.workplace.save()
-        if self.sprint is None:
+        if self.sprint is not None:
             self.sprint.issues.remove(self.id)
             self.sprint.save()
         self.author = None
@@ -117,6 +116,26 @@ class Issue(Document, IssueBase):
 
     def __eq__(self, other):
         if not isinstance(other, (Issue, UUID)):
+            return False
+        id = other if isinstance(other, UUID) else other.id
+        return self.id == id
+
+
+class Comment(Document, CommentBase):
+    id: UUID = Field(default_factory=uuid4)
+    creation_date: datetime = Field(default_factory=datetime.now)
+    author: Optional[Link["UserAssignedWorkplace"]]
+    issue: BackLink["Issue"] = Field(default=None, original_field="comments", exclude=True)
+    # files: List[Link["File"]] = Field(default_factory=list)
+
+    @before_event(Delete)
+    async def delete_refs(self):
+        self.issue.comments.remove(self.id)
+        await self.issue.save()
+        self.author = None
+
+    def __eq__(self, other):
+        if not isinstance(other, (Comment, UUID)):
             return False
         id = other if isinstance(other, UUID) else other.id
         return self.id == id
