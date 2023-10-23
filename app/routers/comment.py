@@ -83,7 +83,7 @@ async def edit_comment(
     response_model=None,
     status_code=status.HTTP_204_NO_CONTENT,
 )
-async def delete_issue(
+async def delete_comment(
     workplace_id=Path(...), comment_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(member)
 ):
     comment = await Comment.find_one(Comment.id == comment_id, fetch_links=True)
