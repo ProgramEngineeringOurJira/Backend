@@ -33,6 +33,7 @@ redis = "^5.0.0"
 beanie = "^1.22.6"
 fastapi-mail = "^1.4.1"
 asyncstdlib = "^3.10.9"
+pathlib = "^1.0.1"
 
 
 [build-system]
