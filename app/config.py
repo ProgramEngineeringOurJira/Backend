@@ -3,6 +3,7 @@ from datetime import timedelta
 from pydantic import MongoDsn, RedisDsn
 from pydantic_settings import BaseSettings
 
+
 class MongoDsnSettings(BaseSettings):
     MONGO_URL: MongoDsn = "mongodb://localhost:27017"
 

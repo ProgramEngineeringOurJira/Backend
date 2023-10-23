@@ -1,9 +1,13 @@
+import pathlib
 from uuid import UUID
 
 from beanie import DeleteRules, WriteRules
-from fastapi import APIRouter, Body, Depends, Path, status
+from fastapi import APIRouter, Body, Depends, Path, Request, UploadFile, status
+from fastapi.responses import FileResponse, JSONResponse
 
-from app.auth.oauth2 import admin, get_current_user, guest
+from app.auth.oauth2 import admin, get_current_user, guest, member
+from app.core.download import downloader
+from app.core.exceptions import WorkplaceFileNotFoundException
 from app.schemas.documents import Role, User, UserAssignedWorkplace, Workplace
 from app.schemas.models import SuccessfulResponse, WorkplaceCreation
 
@@ -46,3 +50,26 @@ async def delete_workplace(workplace_id: UUID = Path(...), user: UserAssignedWor
     workplace = await Workplace.find_one(Workplace.id == workplace_id, fetch_links=True)
     await workplace.delete(link_rule=DeleteRules.DELETE_LINKS)
     return None
+
+
+@router.post("/workplaces/{workplace_id}/file", status_code=status.HTTP_201_CREATED)
+async def add_file(
+    file_to_upload: UploadFile,
+    request: Request,
+    workplace_id: UUID = Path(...),
+    user: UserAssignedWorkplace = Depends(member),
+):
+    filename: str = await downloader(file_to_upload)
+    url = f"{request.url.scheme}://{request.url.hostname}:{request.url.port}/workplaces/{workplace_id}/file/{filename}"
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content={"url_to_file": url})
+
+
+@router.get("/workplaces/{workplace_id}/file/{filename}", status_code=status.HTTP_200_OK)
+async def get_file(
+    workplace_id: UUID = Path(...), filename: str = Path(...), user: UserAssignedWorkplace = Depends(member)
+):
+    local_storage = pathlib.Path(__file__).parent.parent.parent.resolve()
+    path_file = local_storage.joinpath(pathlib.Path(f"my_files/{filename}"))
+    if not pathlib.Path.is_file(path_file):
+        raise WorkplaceFileNotFoundException("Файл не найден")
+    return FileResponse(path_file)

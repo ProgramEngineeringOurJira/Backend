@@ -10,6 +10,7 @@ from .exceptions import (
     SprintNotFoundError,
     UserNotFoundError,
     ValidationError,
+    WorkplaceFileNotFoundException,
     WorkplaceNotFoundError,
 )
 from .mongo_session import MongoManager
@@ -30,4 +31,5 @@ __all__ = [
     "ValidationError",
     "UserNotFoundError",
     "EmailVerificationException",
+    "WorkplaceFileNotFoundException",
 ]
