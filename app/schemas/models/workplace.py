@@ -7,5 +7,6 @@ class WorkplaceCreation(BaseModel):
     name: str
     description: Optional[str] = None
 
+
 class FileModelOut(BaseModel):
-    URL : str = Field()
+    URL: str = Field()

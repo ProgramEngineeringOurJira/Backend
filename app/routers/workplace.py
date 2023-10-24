@@ -3,13 +3,13 @@ from uuid import UUID
 
 from beanie import DeleteRules, WriteRules
 from fastapi import APIRouter, Body, Depends, Path, UploadFile, status
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse
 
 from app.auth.oauth2 import admin, get_current_user, guest, member
 from app.core.download import downloader
 from app.core.exceptions import WorkplaceFileNotFoundException
 from app.schemas.documents import Role, User, UserAssignedWorkplace, Workplace
-from app.schemas.models import SuccessfulResponse, WorkplaceCreation, FileModelOut
+from app.schemas.models import FileModelOut, SuccessfulResponse, WorkplaceCreation
 
 router = APIRouter(tags=["Workplace"])
 
@@ -60,8 +60,7 @@ async def add_file(
 ):
     filename: str = await downloader(file_to_upload, workplace_id)
     url = f"/workplaces/{workplace_id}/file/{filename}"
-    fileModelOut = FileModelOut(url)
-    return fileModelOut
+    return FileModelOut(URL=url)
 
 
 @router.get("/workplaces/{workplace_id}/file/{filename}", status_code=status.HTTP_200_OK)
