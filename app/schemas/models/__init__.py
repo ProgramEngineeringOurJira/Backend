@@ -1,7 +1,7 @@
 from .auth import SuccessfulResponse, Token, TokenData, TokenType, UserRegister
 from .issue import IssueBase, IssueCreation
 from .sprint import SprintCreation
-from .workplace import WorkplaceCreation
+from .workplace import WorkplaceCreation, FileModelOut
 
 __all__ = [
     "UserRegister",
@@ -13,4 +13,5 @@ __all__ = [
     "SprintCreation",
     "WorkplaceCreation",
     "SuccessfulResponse",
+    "FileModelOut"
 ]
