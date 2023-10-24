@@ -59,8 +59,8 @@ async def add_file(
     user: UserAssignedWorkplace = Depends(member),
 ):
     filename: str = await downloader(file_to_upload, workplace_id)
-    url = f"/workplaces/{workplace_id}/file/{filename}"
-    return FileModelOut(URL=url)
+    file_url = f"/workplaces/{workplace_id}/file/{filename}"
+    return FileModelOut(url=file_url)
 
 
 @router.get("/workplaces/{workplace_id}/file/{filename}", status_code=status.HTTP_200_OK)

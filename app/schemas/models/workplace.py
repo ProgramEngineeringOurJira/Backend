@@ -9,4 +9,4 @@ class WorkplaceCreation(BaseModel):
 
 
 class FileModelOut(BaseModel):
-    URL: str = Field()
+    url: str = Field()
