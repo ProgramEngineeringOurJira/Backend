@@ -2,7 +2,7 @@ from typing import List
 from uuid import UUID
 
 from beanie import DeleteRules, WriteRules
-from beanie.operators import RegEx
+from beanie.operators import In, RegEx
 from fastapi import APIRouter, Body, Depends, Path, status
 
 from app.auth.oauth2 import admin, get_current_user, guest
@@ -64,4 +64,9 @@ async def get_users(
     return users
 
 
-# TODO: get all user's workplace
+@router.get("/workplaces", response_model=List[Workplace], status_code=status.HTTP_200_OK)
+async def get_user_workplaces(user: UserAssignedWorkplace = Depends(get_current_user)):
+    workplaces = await Workplace.find(fetch_links=True).to_list()
+    ids = [w.id for w in workplaces for u in w.users if u.user.id == user.id]
+    workplaces = await Workplace.find(In(Workplace.id, ids)).to_list()
+    return workplaces
