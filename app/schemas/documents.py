@@ -8,7 +8,7 @@ from pydantic import Field
 
 from app.core.exceptions import ValidationError
 
-from .models import CommentBase, IssueBase, SprintCreation, UserRegister, WorkplaceCreation
+from .models import CommentCreation, IssueBase, SprintCreation, UserRegister, WorkplaceCreation
 from .types import Role, states
 
 
@@ -121,12 +121,11 @@ class Issue(Document, IssueBase):
         return self.id == id
 
 
-class Comment(Document, CommentBase):
+class Comment(Document, CommentCreation):
     id: UUID = Field(default_factory=uuid4)
     creation_date: datetime = Field(default_factory=datetime.now)
     author: Optional[Link["UserAssignedWorkplace"]]
     issue: BackLink["Issue"] = Field(default=None, original_field="comments", exclude=True)
-    # files: List[Link["File"]] = Field(default_factory=list)
 
     @before_event(Delete)
     async def delete_refs(self):

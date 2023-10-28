@@ -1,19 +1,15 @@
 from typing import List, Optional
-from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 
-class CommentBase(BaseModel):
+class CommentCreation(BaseModel):
     name: str
     text: str
-
-
-class CommentCreation(CommentBase):
-    files: List[UUID] = Field(default=list())
+    files: List[str] = Field(default=list())
 
 
 class CommentUpdate(BaseModel):
     name: Optional[str]
     text: Optional[str]
-    files: Optional[List[UUID]]
+    files: Optional[List[str]]

@@ -26,7 +26,7 @@ async def create_comment(
         raise IssueNotFoundError("Указанная задача не найдена.")
     if issue.workplace.id != workplace_id:
         raise ForbiddenException("Указанная задача находится в другом воркпоейсе.")
-    comment = Comment(**comment_creation.model_dump(exclude={"files"}), author=user)
+    comment = Comment(**comment_creation.model_dump(), author=user)
     issue.comments.append(comment)
     await issue.save(link_rule=WriteRules.WRITE)
     return SuccessfulResponse()
@@ -53,7 +53,7 @@ async def get_issue_comments(
     workplace_id: UUID = Path(...), issue_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(guest)
 ):
     comments = await Comment.find(Comment.issue.id == issue_id, fetch_links=True).to_list()
-    if comments[0].issue.workplace.id != workplace_id:
+    if len(comments) > 0 and comments[0].issue.workplace.id != workplace_id:
         raise ForbiddenException("Указанная задача находится в другом воркплейсе.")
     return comments
 
@@ -74,7 +74,7 @@ async def edit_comment(
         raise CommentNotFoundError("Такого комментария не найдено.")
     if comment.issue.workplace.id != workplace_id:
         raise ForbiddenException("Указанный комментарий находится в другом воркплейсе.")
-    await comment.update({"$set": comment_creation.model_dump(exclude="files")})
+    await comment.update({"$set": comment_creation.model_dump()})
     return SuccessfulResponse()
 
 
@@ -84,7 +84,7 @@ async def edit_comment(
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_comment(
-    workplace_id=Path(...), comment_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(member)
+    workplace_id: UUID = Path(...), comment_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(member)
 ):
     comment = await Comment.find_one(Comment.id == comment_id, fetch_links=True)
     if comment is None:
