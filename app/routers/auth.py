@@ -50,7 +50,7 @@ async def register_user(
     if user is not None:
         raise UserFoundException("Юзер уже существует")
     # Отправка на почту
-    background_tasks.add_task(email.sendMail, request, redis, user_register)
+    background_tasks.add_task(email.sendRegistrationMail, request, redis, user_register)
 
     return SuccessfulResponse()
 
