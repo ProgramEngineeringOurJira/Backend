@@ -1,6 +1,8 @@
+from typing import List
 from uuid import UUID
 
 from beanie import DeleteRules, WriteRules
+from beanie.operators import In, RegEx
 from fastapi import APIRouter, Body, Depends, Path, status
 
 from app.auth.oauth2 import admin, get_current_user, guest
@@ -46,3 +48,25 @@ async def delete_workplace(workplace_id: UUID = Path(...), user: UserAssignedWor
     workplace = await Workplace.find_one(Workplace.id == workplace_id, fetch_links=True)
     await workplace.delete(link_rule=DeleteRules.DELETE_LINKS)
     return None
+
+
+@router.get(
+    "/workplaces/{workplace_id}/users", response_model=List[UserAssignedWorkplace], status_code=status.HTTP_200_OK
+)
+async def get_users(
+    prefix_email: str | None = "", workplace_id: UUID = Path(), user: UserAssignedWorkplace = Depends(guest)
+):
+    users = await UserAssignedWorkplace.find(
+        UserAssignedWorkplace.workplace.id == workplace_id,
+        RegEx(UserAssignedWorkplace.user.email, f"^{prefix_email}"),
+        fetch_links=True,
+    ).to_list()
+    return users
+
+
+@router.get("/workplaces", response_model=List[Workplace], status_code=status.HTTP_200_OK)
+async def get_user_workplaces(user: UserAssignedWorkplace = Depends(get_current_user)):
+    workplaces = await Workplace.find(fetch_links=True).to_list()
+    ids = [w.id for w in workplaces for u in w.users if u.user.id == user.id]
+    workplaces = await Workplace.find(In(Workplace.id, ids)).to_list()
+    return workplaces
