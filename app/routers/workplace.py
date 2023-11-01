@@ -5,13 +5,15 @@ from beanie import DeleteRules, WriteRules
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, Path, Request, UploadFile, status
 from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import EmailStr
+from app.auth.jwt_token import decode_token
 
-from app.auth.oauth2 import admin, get_current_user, guest, member
+from app.auth.oauth2 import admin, get_current_user, guest, member, oauth2_scheme
 from app.core.download import downloader
 from app.core.email import Email
 from app.core.exceptions import WorkplaceFileNotFoundException
 from app.schemas.documents import Role, User, UserAssignedWorkplace, Workplace
 from app.schemas.models import FileModelOut, SuccessfulResponse, WorkplaceCreation
+from app.config import client_api_settings
 
 router = APIRouter(tags=["Workplace"])
 
@@ -74,25 +76,3 @@ async def get_file(
     if not pathlib.Path.is_file(path_file):
         raise WorkplaceFileNotFoundException("Файл не найден")
     return FileResponse(path_file)
-
-
-@router.get("/workplaces/{workplace_id}/invitation", status_code=status.HTTP_200_OK)
-async def add_to_workplace(workplace_id: UUID = Path(...), user: User = Depends(get_current_user)):
-    workplace = await Workplace.find_one(Workplace.id == workplace_id)
-    workplace.users.append(UserAssignedWorkplace(user=user, workplace_id=workplace.id, role=Role.MEMBER))
-    await workplace.save(link_rule=WriteRules.WRITE)
-    return RedirectResponse(f"/workplaces/{workplace_id}")
-
-
-@router.post("/workplaces/{workplace_id}/invite", response_model=SuccessfulResponse, status_code=status.HTTP_200_OK)
-async def invite_to_workplace(
-    request: Request,
-    background_tasks: BackgroundTasks,
-    email: Email = Depends(Email),
-    new_user_email: EmailStr = Body(...),
-    workplace_id: UUID = Path(...),
-    user: UserAssignedWorkplace = Depends(admin),
-):
-    workplace = await Workplace.find_one(Workplace.id == workplace_id)
-    background_tasks.add_task(email.sendInvitationMail, request, new_user_email, workplace_id, workplace.name)
-    return SuccessfulResponse()
