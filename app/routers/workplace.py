@@ -4,6 +4,12 @@ from uuid import UUID
 from beanie import DeleteRules, WriteRules
 from fastapi import APIRouter, Body, Depends, Path, UploadFile, status
 from fastapi.responses import FileResponse
+from typing import List
+from uuid import UUID
+
+from beanie import DeleteRules, WriteRules
+from beanie.operators import In, RegEx
+from fastapi import APIRouter, Body, Depends, Path, status
 
 from app.auth.oauth2 import admin, get_current_user, guest, member
 from app.core.download import downloader
@@ -72,3 +78,23 @@ async def get_file(
     if not pathlib.Path.is_file(path_file):
         raise WorkplaceFileNotFoundException("Файл не найден")
     return FileResponse(path_file)
+@router.get(
+    "/workplaces/{workplace_id}/users", response_model=List[UserAssignedWorkplace], status_code=status.HTTP_200_OK
+)
+async def get_users(
+    prefix_email: str | None = "", workplace_id: UUID = Path(), user: UserAssignedWorkplace = Depends(guest)
+):
+    users = await UserAssignedWorkplace.find(
+        UserAssignedWorkplace.workplace.id == workplace_id,
+        RegEx(UserAssignedWorkplace.user.email, f"^{prefix_email}"),
+        fetch_links=True,
+    ).to_list()
+    return users
+
+
+@router.get("/workplaces", response_model=List[Workplace], status_code=status.HTTP_200_OK)
+async def get_user_workplaces(user: UserAssignedWorkplace = Depends(get_current_user)):
+    workplaces = await Workplace.find(fetch_links=True).to_list()
+    ids = [w.id for w in workplaces for u in w.users if u.user.id == user.id]
+    workplaces = await Workplace.find(In(Workplace.id, ids)).to_list()
+    return workplaces
