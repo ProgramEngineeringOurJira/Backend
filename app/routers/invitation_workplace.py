@@ -1,19 +1,16 @@
-import pathlib
 from uuid import UUID
 
-from beanie import DeleteRules, WriteRules
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, Path, Request, UploadFile, status
-from fastapi.responses import FileResponse, RedirectResponse
+from beanie import WriteRules
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, Path, Request, status
+from fastapi.responses import RedirectResponse
 from pydantic import EmailStr
-from app.auth.jwt_token import decode_token
 
-from app.auth.oauth2 import admin, get_current_user, guest, member, oauth2_scheme
-from app.core.download import downloader
-from app.core.email import Email
-from app.core.exceptions import WorkplaceFileNotFoundException
-from app.schemas.documents import Role, User, UserAssignedWorkplace, Workplace
-from app.schemas.models import FileModelOut, SuccessfulResponse, WorkplaceCreation
+from app.auth.jwt_token import decode_token
+from app.auth.oauth2 import admin, oauth2_scheme
 from app.config import client_api_settings
+from app.core.email import Email
+from app.schemas.documents import Role, User, UserAssignedWorkplace, Workplace
+from app.schemas.models import SuccessfulResponse
 
 router = APIRouter(tags=["InvitationWorkplace"])
 
@@ -22,11 +19,11 @@ router = APIRouter(tags=["InvitationWorkplace"])
 async def add_to_workplace(workplace_id: UUID = Path(...), token: UUID = Depends(oauth2_scheme)):
     token = decode_token(token.credentials)
     user = await User.by_email(token.email)
-    
+
     # Если пользователь не вошёл или не зарегистрировался
     if not user:
         return RedirectResponse(client_api_settings.MAIN_URL)
-    
+
     # Если всё хорошо
     workplace = await Workplace.find_one(Workplace.id == workplace_id)
     workplace.users.append(UserAssignedWorkplace(user=user, workplace_id=workplace.id, role=Role.MEMBER))

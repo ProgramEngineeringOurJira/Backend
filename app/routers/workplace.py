@@ -2,18 +2,14 @@ import pathlib
 from uuid import UUID
 
 from beanie import DeleteRules, WriteRules
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, Path, Request, UploadFile, status
-from fastapi.responses import FileResponse, RedirectResponse
-from pydantic import EmailStr
-from app.auth.jwt_token import decode_token
+from fastapi import APIRouter, Body, Depends, Path, UploadFile, status
+from fastapi.responses import FileResponse
 
-from app.auth.oauth2 import admin, get_current_user, guest, member, oauth2_scheme
+from app.auth.oauth2 import admin, get_current_user, guest, member
 from app.core.download import downloader
-from app.core.email import Email
 from app.core.exceptions import WorkplaceFileNotFoundException
 from app.schemas.documents import Role, User, UserAssignedWorkplace, Workplace
 from app.schemas.models import FileModelOut, SuccessfulResponse, WorkplaceCreation
-from app.config import client_api_settings
 
 router = APIRouter(tags=["Workplace"])
 
