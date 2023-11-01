@@ -1,15 +1,11 @@
 import pathlib
-from uuid import UUID
-
-from beanie import DeleteRules, WriteRules
-from fastapi import APIRouter, Body, Depends, Path, UploadFile, status
-from fastapi.responses import FileResponse
 from typing import List
 from uuid import UUID
 
 from beanie import DeleteRules, WriteRules
 from beanie.operators import In, RegEx
-from fastapi import APIRouter, Body, Depends, Path, status
+from fastapi import APIRouter, Body, Depends, Path, UploadFile, status
+from fastapi.responses import FileResponse
 
 from app.auth.oauth2 import admin, get_current_user, guest, member
 from app.core.download import downloader
@@ -78,6 +74,8 @@ async def get_file(
     if not pathlib.Path.is_file(path_file):
         raise WorkplaceFileNotFoundException("Файл не найден")
     return FileResponse(path_file)
+
+
 @router.get(
     "/workplaces/{workplace_id}/users", response_model=List[UserAssignedWorkplace], status_code=status.HTTP_200_OK
 )
