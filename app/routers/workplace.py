@@ -1,5 +1,5 @@
-from typing import List
 import pathlib
+from typing import List
 from uuid import UUID
 
 from beanie import DeleteRules, WriteRules
