@@ -1,5 +1,6 @@
 from .exceptions import (
     BadRequest,
+    CommentNotFoundError,
     CommonException,
     DoNotUsuRefreshToken,
     EmailVerificationException,
@@ -31,5 +32,6 @@ __all__ = [
     "ValidationError",
     "UserNotFoundError",
     "EmailVerificationException",
+    "CommentNotFoundError",
     "WorkplaceFileNotFoundException",
 ]

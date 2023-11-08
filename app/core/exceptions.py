@@ -70,6 +70,11 @@ class IssueNotFoundError(CommonException):
         super().__init__(status.HTTP_404_NOT_FOUND, error)
 
 
+class CommentNotFoundError(CommonException):
+    def __init__(self, error: str) -> None:
+        super().__init__(status.HTTP_404_NOT_FOUND, error)
+
+
 class UserNotFoundError(CommonException):
     def __init__(self, error: str) -> None:
         super().__init__(status.HTTP_404_NOT_FOUND, error)

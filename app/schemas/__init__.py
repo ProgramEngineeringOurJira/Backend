@@ -1,6 +1,6 @@
-from .documents import Issue, Sprint, User, UserAssignedWorkplace, Workplace
+from .documents import Comment, Issue, Sprint, User, UserAssignedWorkplace, Workplace
 
-__beanie_models__ = [User, Workplace, Sprint, UserAssignedWorkplace, Issue]
+__beanie_models__ = [User, Workplace, Sprint, UserAssignedWorkplace, Issue, Comment]
 
 
 __all__ = [

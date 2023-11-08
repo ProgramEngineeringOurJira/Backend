@@ -49,22 +49,26 @@ async def create_issue(
     response_model=Issue,
     status_code=status.HTTP_200_OK,
 )
-async def get_issue(issue_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(guest)):
-    issue = await Issue.find_one(Issue.id == issue_id, fetch_links=True)
+async def get_issue(
+    workplace_id: UUID = Path(...), issue_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(guest)
+):
+    issue = await Issue.find_one(Issue.workplace.id == workplace_id, Issue.id == issue_id, fetch_links=True)
     if issue is None:
         raise IssueNotFoundError("Такой задачи не найдено.")
     return issue
 
 
 @router.get("/{workplace_id}/sprints/{sprint_id}/issues", response_model=List[Issue], status_code=status.HTTP_200_OK)
-async def get_sprint_issues(sprint_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(guest)):
-    issue = await Issue.find(Issue.sprint_id == sprint_id).to_list()
+async def get_sprint_issues(
+    workplace_id: UUID = Path(...), sprint_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(guest)
+):
+    issue = await Issue.find(Issue.workplace.id == workplace_id, Issue.sprint.id == sprint_id).to_list()
     return issue
 
 
 @router.get("/{workplace_id}/issues", response_model=List[Issue], status_code=status.HTTP_200_OK)
 async def get_workplace_issues(workplace_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(guest)):
-    issue = await Issue.find(Issue.workplace_id == workplace_id).to_list()
+    issue = await Issue.find(Issue.workplace.id == workplace_id).to_list()
     return issue
 
 
@@ -75,7 +79,7 @@ async def edit_issue(
     issue_id: UUID = Path(...),
     user: UserAssignedWorkplace = Depends(member),
 ):
-    issue = await Issue.find_one(Issue.id == issue_id, fetch_links=True)
+    issue = await Issue.find_one(Issue.workplace.id == workplace_id, Issue.id == issue_id, fetch_links=True)
     if issue is None:
         raise IssueNotFoundError("Такой задачи не найдено.")
     if issue_creation.state not in issue.workplace.states:
@@ -102,8 +106,10 @@ async def edit_issue(
 
 
 @router.delete("/{workplace_id}/issues/{issue_id}", response_model=None, status_code=status.HTTP_204_NO_CONTENT)
-async def delete_issue(issue_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(member)):
-    issue = await Issue.find_one(Issue.id == issue_id, fetch_links=True)
+async def delete_issue(
+    workplace_id: UUID = Path(...), issue_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(member)
+):
+    issue = await Issue.find_one(Issue.workplace.id == workplace_id, Issue.id == issue_id, fetch_links=True)
     if issue is None:
         raise IssueNotFoundError("Такой задачи не найдено.")
     await issue.delete()
