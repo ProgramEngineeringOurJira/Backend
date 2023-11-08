@@ -98,3 +98,8 @@ class ValidationError(CommonException):
 class EmailVerificationException(CommonException):
     def __init__(self, error: str) -> None:
         super().__init__(status.HTTP_403_FORBIDDEN, error)
+
+
+class WorkplaceFileNotFoundException(CommonException):
+    def __init__(self, error: str) -> None:
+        super().__init__(status.HTTP_404_NOT_FOUND, error)
