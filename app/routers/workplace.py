@@ -66,7 +66,7 @@ async def add_file(
 
 
 @router.get("/workplaces/{workplace_id}/file/{filename}", status_code=status.HTTP_200_OK,
-            response_model=FileResponse)
+            response_class=FileResponse)
 async def get_file(
     workplace_id: UUID = Path(...), filename: str = Path(...), user: UserAssignedWorkplace = Depends(member)
 ):
