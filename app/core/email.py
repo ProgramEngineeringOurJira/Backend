@@ -31,7 +31,7 @@ class Email:
     # Конструктор сообщения по конфигурации
     fm: FastMail = FastMail(conf)
 
-    async def sendRegistrationMail(self, request: Request, redis: Redis, user_register: UserRegister):
+    async def send_registration_mail(self, request: Request, redis: Redis, user_register: UserRegister):
         # Определяет тело письма и его получателя
         uuid_id = str(uuid4())
         url = f"{request.url.scheme}://{request.url.hostname}:{request.url.port}/v1/verifyemail/{uuid_id}"
@@ -45,7 +45,7 @@ class Email:
         )
         await self.fm.send_message(message)
 
-    async def sendInvitationMail(self, request: Request, email: EmailStr, workplace_id: UUID, workplace_name: str):
+    async def send_invitation_mail(self, request: Request, email: EmailStr, workplace_id: UUID, workplace_name: str):
         url = (
             f"{request.url.scheme}://{request.url.hostname}:{request.url.port}/v1/workplaces/{workplace_id}/invitation"
         )

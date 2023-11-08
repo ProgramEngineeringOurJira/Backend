@@ -1,6 +1,6 @@
 import pathlib
 from typing import List
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from beanie import DeleteRules, WriteRules
 from beanie.operators import In, RegEx
@@ -8,12 +8,11 @@ from fastapi import APIRouter, BackgroundTasks, Body, Depends, Path, Request, Up
 from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import EmailStr
 
-from app.auth.jwt_token import decode_token
-from app.auth.oauth2 import admin, get_current_user, guest, member, oauth2_scheme
-from app.config import client_api_settings
+from app.auth.oauth2 import admin, get_current_user, guest, member
 from app.core.download import downloader
 from app.core.email import Email
 from app.core.exceptions import WorkplaceFileNotFoundException
+from app.core.redis_session import Redis
 from app.schemas.documents import Role, User, UserAssignedWorkplace, Workplace
 from app.schemas.models import FileModelOut, SuccessfulResponse, WorkplaceCreation
 
@@ -58,28 +57,6 @@ async def delete_workplace(workplace_id: UUID = Path(...), user: UserAssignedWor
     return None
 
 
-@router.get(
-    "/workplaces/{workplace_id}/users", response_model=List[UserAssignedWorkplace], status_code=status.HTTP_200_OK
-)
-async def get_users(
-    prefix_email: str | None = "", workplace_id: UUID = Path(), user: UserAssignedWorkplace = Depends(guest)
-):
-    users = await UserAssignedWorkplace.find(
-        UserAssignedWorkplace.workplace.id == workplace_id,
-        RegEx(UserAssignedWorkplace.user.email, f"^{prefix_email}"),
-        fetch_links=True,
-    ).to_list()
-    return users
-
-
-@router.get("/workplaces", response_model=List[Workplace], status_code=status.HTTP_200_OK)
-async def get_user_workplaces(user: UserAssignedWorkplace = Depends(get_current_user)):
-    workplaces = await Workplace.find(fetch_links=True).to_list()
-    ids = [w.id for w in workplaces for u in w.users if u.user.id == user.id]
-    workplaces = await Workplace.find(In(Workplace.id, ids)).to_list()
-    return workplaces
-
-
 @router.post("/workplaces/{workplace_id}/file", status_code=status.HTTP_201_CREATED, response_model=FileModelOut)
 async def add_file(
     file_to_upload: UploadFile,
@@ -102,14 +79,38 @@ async def get_file(
     return FileResponse(path_file)
 
 
-@router.get("/workplaces/{workplace_id}/invitation", status_code=status.HTTP_200_OK)
-async def add_to_workplace(workplace_id: UUID = Path(...), token: UUID = Depends(oauth2_scheme)):
-    token = decode_token(token.credentials)
-    user = await User.by_email(token.email)
+@router.get(
+    "/workplaces/{workplace_id}/users", response_model=List[UserAssignedWorkplace], status_code=status.HTTP_200_OK
+)
+async def get_users(
+    prefix_email: str | None = "", workplace_id: UUID = Path(), user: UserAssignedWorkplace = Depends(guest)
+):
+    users = await UserAssignedWorkplace.find(
+        UserAssignedWorkplace.workplace.id == workplace_id,
+        RegEx(UserAssignedWorkplace.user.email, f"^{prefix_email}"),
+        fetch_links=True,
+    ).to_list()
+    return users
+
+
+@router.get("/workplaces", response_model=List[Workplace], status_code=status.HTTP_200_OK)
+async def get_user_workplaces(user: UserAssignedWorkplace = Depends(get_current_user)):
+    workplaces = await Workplace.find(fetch_links=True).to_list()
+    ids = [w.id for w in workplaces for u in w.users if u.user.id == user.id]
+    workplaces = await Workplace.find(In(Workplace.id, ids)).to_list()
+    return workplaces
+
+
+@router.get("/workplaces/{workplace_id}/invitation/{invitation_id}", status_code=status.HTTP_200_OK)
+async def add_to_workplace(
+    workplace_id: UUID = Path(...), redis: Redis = Depends(Redis), invitation_id: UUID = Path(...)
+):
+    new_user_email = await redis.get_invite_user_email(uuid=invitation_id)
+    user = await User.by_email(new_user_email)
 
     # Если пользователь не вошёл или не зарегистрировался
     if not user:
-        return RedirectResponse(client_api_settings.MAIN_URL)
+        return RedirectResponse("/login")
 
     # Если всё хорошо
     workplace = await Workplace.find_one(Workplace.id == workplace_id)
@@ -126,8 +127,11 @@ async def invite_to_workplace(
     email: Email = Depends(Email),
     new_user_email: EmailStr = Body(...),
     workplace_id: UUID = Path(...),
+    redis: Redis = Depends(Redis),
     user: UserAssignedWorkplace = Depends(admin),
 ):
     workplace = await Workplace.find_one(Workplace.id == workplace_id)
-    background_tasks.add_task(email.sendInvitationMail, request, new_user_email, workplace_id, workplace.name)
+    background_tasks.add_task(email.send_invitation_mail, request, new_user_email, workplace_id, workplace.name)
+    uuid_id = str(uuid4())
+    await redis.set_uuid_invite_email(uuid_id, new_user_email)
     return SuccessfulResponse()
