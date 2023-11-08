@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import EmailStr
 
 from app.auth.oauth2 import admin, get_current_user, guest, member
+from app.config import client_api_settings
 from app.core.download import downloader
 from app.core.email import Email
 from app.core.exceptions import WorkplaceFileNotFoundException
@@ -105,19 +106,19 @@ async def get_user_workplaces(user: UserAssignedWorkplace = Depends(get_current_
 async def add_to_workplace(
     workplace_id: UUID = Path(...), redis: Redis = Depends(Redis), invitation_id: UUID = Path(...)
 ):
-    new_user_email = await redis.get_invite_user_email(uuid=invitation_id)
+    new_user_email = await redis.get_invite_user_email(uuid=str(invitation_id))
     user = await User.by_email(new_user_email)
 
     # Если пользователь не вошёл или не зарегистрировался
     if not user:
-        return RedirectResponse("/login")
+        return RedirectResponse(client_api_settings.LOGIN_URL)
 
     # Если всё хорошо
     workplace = await Workplace.find_one(Workplace.id == workplace_id)
     workplace.users.append(UserAssignedWorkplace(user=user, workplace_id=workplace.id, role=Role.MEMBER))
     await workplace.save(link_rule=WriteRules.WRITE)
 
-    return RedirectResponse(f"/workplaces/{workplace_id}")
+    return RedirectResponse(client_api_settings.WORKPLACE_URL)
 
 
 @router.post("/workplaces/{workplace_id}/invite", response_model=SuccessfulResponse, status_code=status.HTTP_200_OK)
@@ -131,7 +132,9 @@ async def invite_to_workplace(
     user: UserAssignedWorkplace = Depends(admin),
 ):
     workplace = await Workplace.find_one(Workplace.id == workplace_id)
-    background_tasks.add_task(email.send_invitation_mail, request, new_user_email, workplace_id, workplace.name)
-    uuid_id = str(uuid4())
-    await redis.set_uuid_invite_email(uuid_id, new_user_email)
+    invitation_id = str(uuid4())
+    background_tasks.add_task(
+        email.send_invitation_mail, request, new_user_email, workplace_id, invitation_id, workplace.name
+    )
+    await redis.set_uuid_invite_email(invitation_id, new_user_email)
     return SuccessfulResponse()

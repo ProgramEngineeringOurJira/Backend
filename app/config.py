@@ -23,6 +23,8 @@ class RedisSettings(BaseSettings):
 class ClientAPISettings(BaseSettings):
     APP_NAME: str = "Kristi"
     MAIN_URL: str = "/"
+    LOGIN_URL: str
+    WORKPLACE_URL: str
     PATH_PREFIX: str = "/v1"
     APP_HOST: str = "http://0.0.0.0"
     APP_PORT: int = 8080

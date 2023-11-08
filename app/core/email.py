@@ -45,10 +45,11 @@ class Email:
         )
         await self.fm.send_message(message)
 
-    async def send_invitation_mail(self, request: Request, email: EmailStr, workplace_id: UUID, workplace_name: str):
-        url = (
-            f"{request.url.scheme}://{request.url.hostname}:{request.url.port}/v1/workplaces/{workplace_id}/invitation"
-        )
+    async def send_invitation_mail(
+        self, request: Request, email: EmailStr, workplace_id: UUID, invitation_id: UUID, workplace_name: str
+    ):
+        url = f"{request.url.scheme}://{request.url.hostname}:{request.url.port}\
+/v1/workplaces/{workplace_id}/invitation/{invitation_id}"
         message = MessageSchema(
             subject="Welcome",
             recipients=[email],
