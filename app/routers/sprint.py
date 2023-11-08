@@ -53,7 +53,7 @@ async def edit_sprint(
     sprint_id: UUID = Path(...),
     user: UserAssignedWorkplace = Depends(admin),
 ):
-    sprint = await Sprint.find_one(Sprint.id == sprint_id)
+    sprint = await Sprint.find_one(Sprint.workplace.id == workplace_id, Sprint.id == sprint_id)
     if sprint is None:
         raise SprintNotFoundError("Такого спринта не найдено.")
     await Sprint.validate_creation(sprint_creation, workplace_id, sprint_id)
@@ -65,7 +65,7 @@ async def edit_sprint(
 async def delete_sprint(
     workplace_id: UUID = Path(...), sprint_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(admin)
 ):
-    sprint = await Sprint.find_one(Sprint.id == sprint_id, fetch_links=True)
+    sprint = await Sprint.find_one(Sprint.workplace.id == workplace_id, Sprint.id == sprint_id, fetch_links=True)
     if sprint is None:
         raise SprintNotFoundError("Такого спринта не найдено.")
     await sprint.delete()

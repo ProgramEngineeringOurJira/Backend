@@ -16,6 +16,7 @@ poetry install
 
 ```bash
 poetry add
+poetry lock
 ```
 
 ## Установка pre-commit

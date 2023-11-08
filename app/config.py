@@ -21,7 +21,7 @@ class RedisSettings(BaseSettings):
 
 
 class ClientAPISettings(BaseSettings):
-    APP_NAME: str = "jira"
+    APP_NAME: str = "Kristi"
     MAIN_URL: str = "/"
     PATH_PREFIX: str = "/v1"
     APP_HOST: str = "http://0.0.0.0"
