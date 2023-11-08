@@ -108,11 +108,9 @@ async def add_to_workplace(
 ):
     new_user_email = await redis.get_invite_user_email(uuid=str(invitation_id))
     user = await User.by_email(new_user_email)
-
     # Если пользователь не вошёл или не зарегистрировался
     if not user:
         return RedirectResponse(client_api_settings.LOGIN_URL)
-
     # Если всё хорошо
     workplace = await Workplace.find_one(Workplace.id == workplace_id)
     workplace.users.append(UserAssignedWorkplace(user=user, workplace_id=workplace.id, role=Role.MEMBER))
