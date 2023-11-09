@@ -65,8 +65,7 @@ async def add_file(
     return FileModelOut(url=file_url)
 
 
-@router.get("/workplaces/{workplace_id}/file/{filename}", status_code=status.HTTP_200_OK,
-            response_class=FileResponse)
+@router.get("/workplaces/{workplace_id}/file/{filename}", status_code=status.HTTP_200_OK, response_class=FileResponse)
 async def get_file(
     workplace_id: UUID = Path(...), filename: str = Path(...), user: UserAssignedWorkplace = Depends(member)
 ):
@@ -95,5 +94,5 @@ async def get_users(
 async def get_user_workplaces(user: UserAssignedWorkplace = Depends(get_current_user)):
     workplaces = await Workplace.find(fetch_links=True).to_list()
     ids = [w.id for w in workplaces for u in w.users if u.user.id == user.id]
-    workplaces = await Workplace.find(In(Workplace.id, ids)).to_list()
+    workplaces = await Workplace.find(In(Workplace.id, ids), fetch_links=True).to_list()
     return workplaces
