@@ -62,13 +62,16 @@ async def get_issue(
 async def get_sprint_issues(
     workplace_id: UUID = Path(...), sprint_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(guest)
 ):
-    issue = await Issue.find(Issue.workplace.id == workplace_id, Issue.sprint.id == sprint_id).to_list()
+    issue = await Issue.find(
+        Issue.workplace.id == workplace_id, Issue.sprint.id == sprint_id, fetch_links=True
+    ).to_list()
     return issue
 
 
 @router.get("/{workplace_id}/issues", response_model=List[Issue], status_code=status.HTTP_200_OK)
 async def get_workplace_issues(workplace_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(guest)):
-    issue = await Issue.find(Issue.workplace.id == workplace_id).to_list()
+    issue = await Issue.find(Issue.workplace.id == workplace_id, fetch_links=True).to_list()
+    print(f"pidorasina {issue}")
     return issue
 
 
