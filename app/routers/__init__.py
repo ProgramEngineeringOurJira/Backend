@@ -1,5 +1,6 @@
 from app.routers.auth import router as register_router
 from app.routers.comment import router as comment_router
+from app.routers.files import router as files_router
 from app.routers.issue import router as issue_router
 from app.routers.sprint import router as sprint_router
 from app.routers.workplace import router as workplace_router
@@ -10,6 +11,7 @@ list_of_routes = [
     sprint_router,
     issue_router,
     comment_router,
+    files_router,
 ]
 
 
