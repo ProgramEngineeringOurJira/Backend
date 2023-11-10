@@ -1,4 +1,5 @@
 import redis.asyncio as redis
+from pydantic import EmailStr
 
 from app.config import email_settings, redis_settings
 from app.schemas.models.auth import UserRegister
@@ -31,3 +32,12 @@ class Redis:
         user = await self.con.get(uuid)
         await self.con.delete(uuid)
         return user
+
+    async def set_uuid_invite_email(self, uuid: str, email: EmailStr):
+        await self.con.set(uuid, email)
+        await self.con.expire(uuid, email_settings.TTL)
+
+    async def get_invite_user_email(self, uuid: str):
+        email = await self.con.get(uuid)
+        await self.con.delete(uuid)
+        return email
