@@ -36,10 +36,11 @@ async def create_issue(
     issue = Issue(
         **issue_creation.model_dump(exclude={"implementers"}), author=user, implementers=implementers, sprint=None
     )
-    workplace.issues.append(issue)
     if sprint is not None:
         sprint.issues.append(issue)
         await sprint.save(link_rule=WriteRules.WRITE)
+    workplace = await Workplace.find_one(Workplace.id == workplace_id, fetch_links=True)
+    workplace.issues.append(issue)
     await workplace.save(link_rule=WriteRules.WRITE)
     return SuccessfulResponse()
 
