@@ -63,7 +63,7 @@ async def get_issue(
 @router.get(
     "/{workplace_id}/sprints/{sprint_id}/issues", response_model=List[IssueResponse], status_code=status.HTTP_200_OK
 )
-async def get_sprint_issues_gandon(
+async def get_sprint_issues(
     workplace_id: UUID = Path(...), sprint_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(guest)
 ):
     issue = await Issue.find(
