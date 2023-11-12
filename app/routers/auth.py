@@ -13,6 +13,7 @@ from app.core.redis_session import Redis
 from app.schemas.documents import User
 from app.schemas.models import SuccessfulResponse
 from app.schemas.models.auth import Token, TokenData, UserRegister
+from app.schemas.responses import UserResponse
 
 router = APIRouter(tags=["Auth"])
 
@@ -69,6 +70,6 @@ async def verify_email(token: str, redis: Redis = Depends(Redis)):
     return RedirectResponse(client_api_settings.MAIN_URL)
 
 
-@router.get("/profile/", response_model=User, status_code=status.HTTP_200_OK)
+@router.get("/profile/", response_model=UserResponse, status_code=status.HTTP_200_OK)
 async def get_user_profile(user: User = Depends(get_current_user)):
     return user

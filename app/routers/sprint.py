@@ -8,6 +8,7 @@ from app.auth.oauth2 import admin, guest
 from app.core.exceptions import SprintNotFoundError
 from app.schemas.documents import Sprint, SprintCreation, UserAssignedWorkplace, Workplace
 from app.schemas.models import SuccessfulResponse
+from app.schemas.responses import SprintResponse
 
 router = APIRouter(tags=["Sprint"])
 
@@ -25,7 +26,7 @@ async def create_sprint(
     return SuccessfulResponse()
 
 
-@router.get("/{workplace_id}/sprints/{sprint_id}", response_model=Sprint, status_code=status.HTTP_200_OK)
+@router.get("/{workplace_id}/sprints/{sprint_id}", response_model=SprintResponse, status_code=status.HTTP_200_OK)
 async def get_sprint(
     workplace_id: UUID = Path(...), sprint_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(guest)
 ):
@@ -35,7 +36,9 @@ async def get_sprint(
     return sprint
 
 
-@router.get("/{workplace_id}/sprints/{skip}/{limit}", response_model=List[Sprint], status_code=status.HTTP_200_OK)
+@router.get(
+    "/{workplace_id}/sprints/{skip}/{limit}", response_model=List[SprintResponse], status_code=status.HTTP_200_OK
+)
 async def get_sprints(
     workplace_id: UUID = Path(...),
     skip: int = Path(...),

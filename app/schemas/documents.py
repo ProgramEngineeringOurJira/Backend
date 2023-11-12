@@ -12,6 +12,32 @@ from .models import CommentCreation, IssueBase, SprintCreation, UserRegister, Wo
 from .types import Role, states
 
 
+# отдельные классы без бэклинков, т.к. они бунтуют при преобразовании к дочернему типу
+class UAWNoBackLinks(Document):
+    id: UUID = Field(default_factory=uuid4)
+    user: Link["User"]
+    role: Role
+
+
+class SprintNoBackLinks(Document, SprintCreation):
+    id: UUID = Field(default_factory=uuid4)
+    issues: List[Link["Issue"]] = Field(default_factory=list)
+
+
+class IssueNoBackLinks(Document, IssueBase):
+    id: UUID = Field(default_factory=uuid4)
+    creation_date: datetime = Field(default_factory=datetime.now)
+    author: Optional[Link["UserAssignedWorkplace"]]
+    implementers: List[Link["UserAssignedWorkplace"]] = Field(default_factory=list)
+    comments: List[Link["Comment"]] = Field(default_factory=list)
+
+
+class CommentNoBackLinks(Document, CommentCreation):
+    id: UUID = Field(default_factory=uuid4)
+    creation_date: datetime = Field(default_factory=datetime.now)
+    author: Optional[Link["UserAssignedWorkplace"]]
+
+
 class User(Document, UserRegister):
     id: UUID = Field(default_factory=uuid4)
     email: Indexed(str, unique=True)
@@ -34,11 +60,8 @@ class User(Document, UserRegister):
         return self.id == id
 
 
-class UserAssignedWorkplace(Document):
-    id: UUID = Field(default_factory=uuid4)
-    user: Link["User"]
+class UserAssignedWorkplace(UAWNoBackLinks):
     workplace: BackLink["Workplace"] = Field(original_field="users", exclude=True)
-    role: Role
 
     @before_event(Delete)
     async def delete_refs(self):
@@ -62,10 +85,8 @@ class Workplace(Document, WorkplaceCreation):
     issues: List[Link["Issue"]] = Field(default_factory=list)
 
 
-class Sprint(Document, SprintCreation):
-    id: UUID = Field(default_factory=uuid4)
+class Sprint(SprintNoBackLinks):
     workplace: BackLink["Workplace"] = Field(original_field="sprints", exclude=True)
-    issues: List[Link["Issue"]] = Field(default_factory=list)
 
     @before_event(Delete)
     async def delete_ref_workplace(self):
@@ -95,14 +116,9 @@ class Sprint(Document, SprintCreation):
         return self.id == id
 
 
-class Issue(Document, IssueBase):
-    id: UUID = Field(default_factory=uuid4)
-    creation_date: datetime = Field(default_factory=datetime.now)
+class Issue(IssueNoBackLinks):
     workplace: BackLink["Workplace"] = Field(original_field="issues", exclude=True)
-    author: Optional[Link["UserAssignedWorkplace"]]
     sprint: Optional[BackLink["Sprint"]] = Field(default=None, original_field="issues", exclude=True)
-    implementers: List[Link["UserAssignedWorkplace"]] = Field(default_factory=list)
-    comments: List[Link["Comment"]] = Field(default_factory=list)
 
     @before_event(Delete)
     async def delete_refs(self):
@@ -121,10 +137,7 @@ class Issue(Document, IssueBase):
         return self.id == id
 
 
-class Comment(Document, CommentCreation):
-    id: UUID = Field(default_factory=uuid4)
-    creation_date: datetime = Field(default_factory=datetime.now)
-    author: Optional[Link["UserAssignedWorkplace"]]
+class Comment(CommentNoBackLinks):
     issue: BackLink["Issue"] = Field(default=None, original_field="comments", exclude=True)
 
     @before_event(Delete)

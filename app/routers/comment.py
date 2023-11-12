@@ -8,6 +8,7 @@ from app.auth.oauth2 import guest, member
 from app.core.exceptions import CommentNotFoundError, ForbiddenException, IssueNotFoundError
 from app.schemas.documents import Comment, Issue, UserAssignedWorkplace
 from app.schemas.models import CommentCreation, SuccessfulResponse
+from app.schemas.responses import CommentResponse
 
 router = APIRouter(tags=["Comment"])
 
@@ -34,7 +35,7 @@ async def create_comment(
 
 @router.get(
     "/{workplace_id}/comments/{comment_id}",
-    response_model=Comment,
+    response_model=CommentResponse,
     status_code=status.HTTP_200_OK,
 )
 async def get_comment(
@@ -48,7 +49,9 @@ async def get_comment(
     return comment
 
 
-@router.get("/{workplace_id}/issues/{issue_id}/comments", response_model=List[Comment], status_code=status.HTTP_200_OK)
+@router.get(
+    "/{workplace_id}/issues/{issue_id}/comments", response_model=List[CommentResponse], status_code=status.HTTP_200_OK
+)
 async def get_issue_comments(
     workplace_id: UUID = Path(...), issue_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(guest)
 ):

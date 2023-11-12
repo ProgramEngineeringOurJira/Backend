@@ -10,6 +10,7 @@ from app.auth.oauth2 import guest, member
 from app.core.exceptions import IssueNotFoundError, SprintNotFoundError, UserNotFoundError, ValidationError
 from app.schemas.documents import Issue, Sprint, UserAssignedWorkplace, Workplace
 from app.schemas.models import IssueCreation, SuccessfulResponse
+from app.schemas.responses import IssueResponse
 
 router = APIRouter(tags=["Issue"])
 
@@ -47,7 +48,7 @@ async def create_issue(
 
 @router.get(
     "/{workplace_id}/issues/{issue_id}",
-    response_model=Issue,
+    response_model=IssueResponse,
     status_code=status.HTTP_200_OK,
 )
 async def get_issue(
@@ -59,8 +60,10 @@ async def get_issue(
     return issue
 
 
-@router.get("/{workplace_id}/sprints/{sprint_id}/issues", response_model=List[Issue], status_code=status.HTTP_200_OK)
-async def get_sprint_issues(
+@router.get(
+    "/{workplace_id}/sprints/{sprint_id}/issues", response_model=List[IssueResponse], status_code=status.HTTP_200_OK
+)
+async def get_sprint_issues_gandon(
     workplace_id: UUID = Path(...), sprint_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(guest)
 ):
     issue = await Issue.find(
@@ -69,10 +72,9 @@ async def get_sprint_issues(
     return issue
 
 
-@router.get("/{workplace_id}/issues", response_model=List[Issue], status_code=status.HTTP_200_OK)
+@router.get("/{workplace_id}/issues", response_model=List[IssueResponse], status_code=status.HTTP_200_OK)
 async def get_workplace_issues(workplace_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(guest)):
     issue = await Issue.find(Issue.workplace.id == workplace_id, fetch_links=True).to_list()
-    print(f"pidorasina {issue}")
     return issue
 
 
