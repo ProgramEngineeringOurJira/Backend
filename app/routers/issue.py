@@ -28,7 +28,6 @@ async def create_issue(
     workplace_id: UUID = Path(...),
     user: UserAssignedWorkplace = Depends(member),
 ):
-    # workplace = await Workplace.find_one(Workplace.id == workplace_id, fetch_links=True)
     sprint = await Sprint.find_one(
         Sprint.workplace.id == workplace_id, Sprint.id == issue_creation.sprint_id, fetch_links=True
     )
@@ -43,12 +42,8 @@ async def create_issue(
     if issue_creation.state not in workplace.states:
         raise ValidationError("Указанного статуса нет существует.")
     issue = Issue(**issue_creation.model_dump(exclude={"implementers"}), author=user, implementers=implementers)
-    # if sprint is not None:
     sprint.issues.append(issue)
     await sprint.save(link_rule=WriteRules.WRITE)
-    # workplace = await Workplace.find_one(Workplace.id == workplace_id, fetch_links=True)
-    # workplace.issues.append(issue)
-    # await workplace.save(link_rule=WriteRules.WRITE)
     return SuccessfulResponse()
 
 
@@ -84,7 +79,6 @@ async def get_sprint_issues(
 async def get_workplace_issues(workplace_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(guest)):
     sprints = await Sprint.find(Sprint.workplace.id == workplace_id, fetch_links=True).to_list()
     list_issues = [sprint.issues for sprint in sprints]
-    # issue = await Issue.find(Issue.sprint.workplace.id == workplace_id, fetch_links=True).to_list()
     return list(itertools.chain.from_iterable(list_issues))
 
 
@@ -107,8 +101,6 @@ async def edit_issue(
         raise UserNotFoundError("Пользователь не найден в воркплейсе")
     if not set(implementers).issubset(issue.sprint.workplace.users):
         raise ValidationError("Пользователь не принадлежит worplace")
-    # if issue_creation.sprint_id is not None:
-    # блядь None не робит я в ахуе issue создан в либу, убейте меня время 5 утра я в щи, баскетбол ногой...
     if issue_creation.sprint_id != issue.sprint.id:
         sprint = await Sprint.find_one(
             Sprint.workplace.id == workplace_id, Sprint.id == issue_creation.sprint_id, fetch_links=True
@@ -119,8 +111,6 @@ async def edit_issue(
         await issue.save(link_rule=WriteRules.WRITE)
         sprint.issues.append(issue)
         await sprint.save(link_rule=WriteRules.WRITE)
-    # else:
-    # issue.sprint.issue.remove(issue.id)
     issue.implementers = implementers
     await issue.update({"$set": issue_creation.model_dump(exclude="author,implementers")})
     return SuccessfulResponse()

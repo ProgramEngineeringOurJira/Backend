@@ -82,7 +82,6 @@ class Workplace(Document, WorkplaceCreation):
     states: List[str] = Field(default_factory=states)
     users: List[Link["UserAssignedWorkplace"]] = Field(default_factory=list, exclude=True)
     sprints: List[Link["Sprint"]] = Field(default_factory=list)
-    # issues: List[Link["Issue"]] = Field(default_factory=list)
 
 
 class Sprint(SprintNoBackLinks):
@@ -117,14 +116,10 @@ class Sprint(SprintNoBackLinks):
 
 
 class Issue(IssueNoBackLinks):
-    # workplace: BackLink["Workplace"] = Field(original_field="issues", exclude=True)
     sprint: BackLink["Sprint"] = Field(default=None, original_field="issues", exclude=True)
 
     @before_event(Delete)
     async def delete_refs(self):
-        # self.workplace.issues.remove(self.id)
-        # await self.workplace.save()
-        # if self.sprint is not None:
         self.sprint.issues.remove(self.id)
         self.sprint.save(link_rule=WriteRules.WRITE)
         self.author = None
