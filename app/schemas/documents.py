@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID, uuid4
 
-from beanie import BackLink, Delete, Document, Indexed, Link, before_event
+from beanie import BackLink, Delete, Document, Indexed, Link, WriteRules, before_event
 from beanie.odm.operators.find.logical import And, Or
 from pydantic import Field
 
@@ -82,7 +82,7 @@ class Workplace(Document, WorkplaceCreation):
     states: List[str] = Field(default_factory=states)
     users: List[Link["UserAssignedWorkplace"]] = Field(default_factory=list, exclude=True)
     sprints: List[Link["Sprint"]] = Field(default_factory=list)
-    issues: List[Link["Issue"]] = Field(default_factory=list)
+    # issues: List[Link["Issue"]] = Field(default_factory=list)
 
 
 class Sprint(SprintNoBackLinks):
@@ -91,7 +91,7 @@ class Sprint(SprintNoBackLinks):
     @before_event(Delete)
     async def delete_ref_workplace(self):
         self.workplace.sprints.remove(self.id)
-        await self.workplace.save()
+        await self.workplace.save(link_rule=WriteRules.WRITE)
 
     async def validate_creation(
         sprint_creation: SprintCreation, workplace_id: UUID, sprint_id: UUID = None, check_self=False
@@ -117,16 +117,16 @@ class Sprint(SprintNoBackLinks):
 
 
 class Issue(IssueNoBackLinks):
-    workplace: BackLink["Workplace"] = Field(original_field="issues", exclude=True)
-    sprint: Optional[BackLink["Sprint"]] = Field(default=None, original_field="issues", exclude=True)
+    # workplace: BackLink["Workplace"] = Field(original_field="issues", exclude=True)
+    sprint: BackLink["Sprint"] = Field(default=None, original_field="issues", exclude=True)
 
     @before_event(Delete)
     async def delete_refs(self):
-        self.workplace.issues.remove(self.id)
-        await self.workplace.save()
-        if self.sprint is not None:
-            self.sprint.issues.remove(self.id)
-            self.sprint.save()
+        # self.workplace.issues.remove(self.id)
+        # await self.workplace.save()
+        # if self.sprint is not None:
+        self.sprint.issues.remove(self.id)
+        self.sprint.save(link_rule=WriteRules.WRITE)
         self.author = None
         self.implementers = []
 
@@ -143,7 +143,7 @@ class Comment(CommentNoBackLinks):
     @before_event(Delete)
     async def delete_refs(self):
         self.issue.comments.remove(self.id)
-        await self.issue.save()
+        await self.issue.save(link_rule=WriteRules.WRITE)
         self.author = None
 
     def __eq__(self, other):

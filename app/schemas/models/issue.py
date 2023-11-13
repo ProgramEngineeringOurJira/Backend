@@ -14,7 +14,7 @@ class IssueBase(BaseModel):
 
 
 class IssueCreation(IssueBase):
-    sprint_id: Optional[UUID] = None
+    sprint_id: UUID
     implementers: List[UUID] = Field(default=list())
 
 
