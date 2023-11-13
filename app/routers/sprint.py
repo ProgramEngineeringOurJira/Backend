@@ -37,7 +37,7 @@ async def get_sprint(
 
 
 @router.get(
-    "/{workplace_id}/sprints/{skip}/{limit}", response_model=List[SprintResponse], status_code=status.HTTP_200_OK
+    "/{workplace_id}/sprints/list/{skip}/{limit}", response_model=List[SprintResponse], status_code=status.HTTP_200_OK
 )
 async def get_sprints(
     workplace_id: UUID = Path(...),
