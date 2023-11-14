@@ -13,7 +13,6 @@ from app.core.email import Email
 from app.core.redis_session import Redis
 from app.schemas.documents import Role, User, UserAssignedWorkplace, Workplace
 from app.schemas.models import SuccessfulResponse, WorkplaceCreation
-from app.schemas.responses import UserAssignedWorkplaceResponse, WorkplaceResponse
 
 router = APIRouter(tags=["Workplace"])
 
@@ -28,8 +27,9 @@ async def create_workplace(workplace_creation: WorkplaceCreation = Body(...), us
 
 @router.get(
     "/workplaces/{workplace_id}",
-    response_model=WorkplaceResponse,
+    response_model=Workplace,
     status_code=status.HTTP_200_OK,
+    response_model_by_alias=False,
     response_model_exclude={"users"},
 )
 async def get_workplace(workplace_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(guest)):
@@ -58,7 +58,8 @@ async def delete_workplace(workplace_id: UUID = Path(...), user: UserAssignedWor
 
 @router.get(
     "/workplaces/{workplace_id}/users",
-    response_model=List[UserAssignedWorkplaceResponse],
+    response_model=List[UserAssignedWorkplace],
+    response_model_by_alias=False,
     status_code=status.HTTP_200_OK,
 )
 async def get_users(
@@ -72,7 +73,9 @@ async def get_users(
     return users
 
 
-@router.get("/workplaces", response_model=List[WorkplaceResponse], status_code=status.HTTP_200_OK)
+@router.get(
+    "/workplaces", response_model=List[Workplace], response_model_by_alias=False, status_code=status.HTTP_200_OK
+)
 async def get_user_workplaces(user: UserAssignedWorkplace = Depends(get_current_user)):
     workplaces = await Workplace.find(fetch_links=True).to_list()
     ids = [w.id for w in workplaces for u in w.users if u.user.id == user.id]

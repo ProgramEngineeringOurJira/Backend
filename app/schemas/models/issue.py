@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from ..types import Priority
+from ..types import Label, Priority
 
 
 class IssueBase(BaseModel):
@@ -11,6 +11,7 @@ class IssueBase(BaseModel):
     text: str
     priority: Priority
     state: str
+    label: Label
 
 
 class IssueCreation(IssueBase):
@@ -23,5 +24,6 @@ class IssueUpdate(BaseModel):
     text: Optional[str]
     priority: Optional[Priority]
     state: Optional[str]
+    label: Optional[Label]
     sprint_id: Optional[UUID] = None
     implementers: Optional[List[UUID]]

@@ -17,7 +17,6 @@ from app.core.exceptions import (
 )
 from app.schemas.documents import Issue, Sprint, UserAssignedWorkplace
 from app.schemas.models import IssueCreation, SuccessfulResponse
-from app.schemas.responses import IssueResponse
 
 router = APIRouter(tags=["Issue"])
 
@@ -43,13 +42,15 @@ async def create_issue(
         raise ValidationError("Указанного статуса нет существует.")
     issue = Issue(**issue_creation.model_dump(exclude={"implementers"}), author=user, implementers=implementers)
     sprint.issues.append(issue)
+    issue.end_date = sprint.end_date
     await sprint.save(link_rule=WriteRules.WRITE)
     return SuccessfulResponse()
 
 
 @router.get(
     "/{workplace_id}/issues/{issue_id}",
-    response_model=IssueResponse,
+    response_model=Issue,
+    response_model_by_alias=False,
     status_code=status.HTTP_200_OK,
 )
 async def get_issue(
@@ -64,7 +65,10 @@ async def get_issue(
 
 
 @router.get(
-    "/{workplace_id}/sprints/{sprint_id}/issues", response_model=List[IssueResponse], status_code=status.HTTP_200_OK
+    "/{workplace_id}/sprints/{sprint_id}/issues",
+    response_model=List[Issue],
+    response_model_by_alias=False,
+    status_code=status.HTTP_200_OK,
 )
 async def get_sprint_issues(
     workplace_id: UUID = Path(...), sprint_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(guest)
@@ -75,7 +79,9 @@ async def get_sprint_issues(
     return sprint.issues
 
 
-@router.get("/{workplace_id}/issues", response_model=List[IssueResponse], status_code=status.HTTP_200_OK)
+@router.get(
+    "/{workplace_id}/issues", response_model=List[Issue], response_model_by_alias=False, status_code=status.HTTP_200_OK
+)
 async def get_workplace_issues(workplace_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(guest)):
     sprints = await Sprint.find(Sprint.workplace.id == workplace_id, fetch_links=True).to_list()
     list_issues = [sprint.issues for sprint in sprints]
@@ -110,6 +116,7 @@ async def edit_issue(
         issue.sprint.issues.remove(issue.id)
         await issue.save(link_rule=WriteRules.WRITE)
         sprint.issues.append(issue)
+        issue.end_date = sprint.end_date
         await sprint.save(link_rule=WriteRules.WRITE)
     issue.implementers = implementers
     await issue.update({"$set": issue_creation.model_dump(exclude="author,implementers")})

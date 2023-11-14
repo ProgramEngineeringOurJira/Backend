@@ -16,3 +16,12 @@ class Priority(StrEnum):
     NORMAL = "NORMAL"
     HIGH = "HIGH"
     URGENT = "URGRENT"
+
+
+class Label(StrEnum):
+    FRONTEND = "frontend"
+    BACKEND = "backend"
+    DEVOPS = "devops"
+    QA = "qa"
+    DESIGN = "design"
+    OTHER = "other"

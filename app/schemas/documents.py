@@ -12,32 +12,6 @@ from .models import CommentCreation, IssueBase, SprintCreation, UserRegister, Wo
 from .types import Role, states
 
 
-# отдельные классы без бэклинков, т.к. они бунтуют при преобразовании к дочернему типу
-class UAWNoBackLinks(Document):
-    id: UUID = Field(default_factory=uuid4)
-    user: Link["User"]
-    role: Role
-
-
-class SprintNoBackLinks(Document, SprintCreation):
-    id: UUID = Field(default_factory=uuid4)
-    issues: List[Link["Issue"]] = Field(default_factory=list)
-
-
-class IssueNoBackLinks(Document, IssueBase):
-    id: UUID = Field(default_factory=uuid4)
-    creation_date: datetime = Field(default_factory=datetime.now)
-    author: Optional[Link["UserAssignedWorkplace"]]
-    implementers: List[Link["UserAssignedWorkplace"]] = Field(default_factory=list)
-    comments: List[Link["Comment"]] = Field(default_factory=list)
-
-
-class CommentNoBackLinks(Document, CommentCreation):
-    id: UUID = Field(default_factory=uuid4)
-    creation_date: datetime = Field(default_factory=datetime.now)
-    author: Optional[Link["UserAssignedWorkplace"]]
-
-
 class User(Document, UserRegister):
     id: UUID = Field(default_factory=uuid4)
     email: Indexed(str, unique=True)
@@ -60,7 +34,10 @@ class User(Document, UserRegister):
         return self.id == id
 
 
-class UserAssignedWorkplace(UAWNoBackLinks):
+class UserAssignedWorkplace(Document):
+    id: UUID = Field(default_factory=uuid4)
+    user: Link["User"]
+    role: Role
     workplace: BackLink["Workplace"] = Field(original_field="users", exclude=True)
 
     @before_event(Delete)
@@ -84,7 +61,9 @@ class Workplace(Document, WorkplaceCreation):
     sprints: List[Link["Sprint"]] = Field(default_factory=list)
 
 
-class Sprint(SprintNoBackLinks):
+class Sprint(Document, SprintCreation):
+    id: UUID = Field(default_factory=uuid4)
+    issues: List[Link["Issue"]] = Field(default_factory=list)
     workplace: BackLink["Workplace"] = Field(original_field="sprints", exclude=True)
 
     @before_event(Delete)
@@ -115,13 +94,19 @@ class Sprint(SprintNoBackLinks):
         return self.id == id
 
 
-class Issue(IssueNoBackLinks):
+class Issue(Document, IssueBase):
+    id: UUID = Field(default_factory=uuid4)
+    creation_date: datetime = Field(default_factory=datetime.now)
+    end_date: datetime = Field(default_factory=datetime.now)
+    author: Optional[Link["UserAssignedWorkplace"]]
+    implementers: List[Link["UserAssignedWorkplace"]] = Field(default_factory=list)
+    comments: List[Link["Comment"]] = Field(default_factory=list)
     sprint: BackLink["Sprint"] = Field(default=None, original_field="issues", exclude=True)
 
     @before_event(Delete)
     async def delete_refs(self):
         self.sprint.issues.remove(self.id)
-        self.sprint.save(link_rule=WriteRules.WRITE)
+        await self.sprint.save(link_rule=WriteRules.WRITE)  #
         self.author = None
         self.implementers = []
 
@@ -132,7 +117,10 @@ class Issue(IssueNoBackLinks):
         return self.id == id
 
 
-class Comment(CommentNoBackLinks):
+class Comment(Document, CommentCreation):
+    id: UUID = Field(default_factory=uuid4)
+    creation_date: datetime = Field(default_factory=datetime.now)
+    author: Optional[Link["UserAssignedWorkplace"]]
     issue: BackLink["Issue"] = Field(default=None, original_field="comments", exclude=True)
 
     @before_event(Delete)
