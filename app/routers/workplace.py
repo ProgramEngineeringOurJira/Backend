@@ -1,7 +1,7 @@
 from typing import List
 from uuid import UUID, uuid4
 
-from beanie import DeleteRules, WriteRules
+from beanie import WriteRules
 from beanie.operators import In, RegEx
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, Path, Request, status
 from fastapi.responses import RedirectResponse
@@ -11,7 +11,7 @@ from app.auth.oauth2 import admin, get_current_user, guest
 from app.config import client_api_settings
 from app.core.email import Email
 from app.core.redis_session import Redis
-from app.schemas.documents import Role, User, UserAssignedWorkplace, Workplace
+from app.schemas.documents import Comment, Issue, Role, Sprint, User, UserAssignedWorkplace, Workplace
 from app.schemas.models import SuccessfulResponse, WorkplaceCreation
 
 router = APIRouter(tags=["Workplace"])
@@ -50,9 +50,12 @@ async def edit_workplace(
 
 @router.delete("/workplaces/{workplace_id}", response_model=None, status_code=status.HTTP_204_NO_CONTENT)
 async def delete_workplace(workplace_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(admin)):
-    await UserAssignedWorkplace.find(UserAssignedWorkplace.workplace.id == workplace_id).delete()
+    await UserAssignedWorkplace.find(UserAssignedWorkplace.workplace_id == workplace_id).delete()
+    await Comment.find(Comment.workplace_id == workplace_id).delete()
+    await Issue.find(Issue.workplace_id == workplace_id).delete()
+    await Sprint.find(Sprint.workplace_id == workplace_id).delete()
     workplace = await Workplace.find_one(Workplace.id == workplace_id, fetch_links=True)
-    await workplace.delete(link_rule=DeleteRules.DELETE_LINKS)
+    await workplace.delete()
     return None
 
 

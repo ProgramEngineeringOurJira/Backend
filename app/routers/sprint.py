@@ -6,7 +6,7 @@ from fastapi import APIRouter, Body, Depends, Path, status
 
 from app.auth.oauth2 import admin, guest
 from app.core.exceptions import SprintNotFoundError
-from app.schemas.documents import Sprint, SprintCreation, UserAssignedWorkplace, Workplace
+from app.schemas.documents import Comment, Issue, Sprint, SprintCreation, UserAssignedWorkplace, Workplace
 from app.schemas.models import SuccessfulResponse
 
 router = APIRouter(tags=["Sprint"])
@@ -20,7 +20,7 @@ async def create_sprint(
 ):
     await Sprint.validate_creation(sprint_creation, workplace_id)
     workplace = await Workplace.find_one(Workplace.id == workplace_id, fetch_links=True)
-    workplace.sprints.append(Sprint(**sprint_creation.model_dump()))
+    workplace.sprints.append(Sprint(**sprint_creation.model_dump(), workplace_id=workplace.id))
     await workplace.save(link_rule=WriteRules.WRITE)
     return SuccessfulResponse()
 
@@ -34,7 +34,7 @@ async def create_sprint(
 async def get_sprint(
     workplace_id: UUID = Path(...), sprint_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(guest)
 ):
-    sprint = await Sprint.find_one(Sprint.id == sprint_id, Sprint.workplace.id == workplace_id, fetch_links=True)
+    sprint = await Sprint.find_one(Sprint.id == sprint_id, Sprint.workplace_id == workplace_id, fetch_links=True)
     if sprint is None:
         raise SprintNotFoundError("Такого спринта не найдено.")
     return sprint
@@ -52,7 +52,7 @@ async def get_sprints(
     limit: int = Path(...),
     user: UserAssignedWorkplace = Depends(guest),
 ):
-    sprints = await Sprint.find(Sprint.workplace.id == workplace_id, fetch_links=True).skip(skip).limit(limit).to_list()
+    sprints = await Sprint.find(Sprint.workplace_id == workplace_id, fetch_links=True).skip(skip).limit(limit).to_list()
     return sprints
 
 
@@ -63,7 +63,7 @@ async def edit_sprint(
     sprint_id: UUID = Path(...),
     user: UserAssignedWorkplace = Depends(admin),
 ):
-    sprint = await Sprint.find_one(Sprint.workplace.id == workplace_id, Sprint.id == sprint_id)
+    sprint = await Sprint.find_one(Sprint.workplace_id == workplace_id, Sprint.id == sprint_id)
     if sprint is None:
         raise SprintNotFoundError("Такого спринта не найдено.")
     await Sprint.validate_creation(sprint_creation, workplace_id, sprint_id)
@@ -76,8 +76,12 @@ async def edit_sprint(
 async def delete_sprint(
     workplace_id: UUID = Path(...), sprint_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(admin)
 ):
-    sprint = await Sprint.find_one(Sprint.workplace.id == workplace_id, Sprint.id == sprint_id, fetch_links=True)
+    sprint = await Sprint.find_one(Sprint.workplace_id == workplace_id, Sprint.id == sprint_id, fetch_links=True)
     if sprint is None:
         raise SprintNotFoundError("Такого спринта не найдено.")
+    sprint.workplace.sprints.remove(sprint.id)
+    await sprint.workplace.save(link_rule=WriteRules.WRITE)
+    await Comment.find(Comment.sprint_id == sprint_id).delete()
+    await Issue.find(Issue.sprint_id == sprint_id).delete()
     await sprint.delete()
     return None
