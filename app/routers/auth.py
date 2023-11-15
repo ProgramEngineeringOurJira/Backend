@@ -12,7 +12,7 @@ from app.core.exceptions import EmailVerificationException, UserFoundException
 from app.core.redis_session import Redis
 from app.schemas.documents import User
 from app.schemas.models import SuccessfulResponse
-from app.schemas.models.auth import Token, TokenData, UserRegister, UserLogin
+from app.schemas.models.auth import Token, TokenData, UserLogin, UserRegister
 
 router = APIRouter(tags=["Auth"])
 
