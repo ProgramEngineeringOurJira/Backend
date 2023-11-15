@@ -41,3 +41,15 @@ async def search_issues(
         Issue.workplace.id == workplace_id, RegEx(Issue.name, f"^{start_str.start_string}"), fetch_links=True
     ).to_list()
     return issues
+
+
+@router.post(
+    "/{workplace_id}/search/userissues",
+    response_model=List[Issue],
+    response_model_by_alias=False,
+    status_code=status.HTTP_200_OK,
+)
+async def search_issues_for_user(workplace_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(member)):
+    issues = await Issue.find(Issue.workplace.id == workplace_id, fetch_links=True).to_list()
+    user_issues = [i for i in issues if user in i.implementers]
+    return user_issues
