@@ -59,7 +59,7 @@ async def delete_workplace(workplace_id: UUID = Path(...), user: UserAssignedWor
     "/workplaces/{workplace_id}/users", response_model=List[UserAssignedWorkplace], status_code=status.HTTP_200_OK
 )
 async def get_users(
-    prefix_email: str | None = "", workplace_id: UUID = Path(), user: UserAssignedWorkplace = Depends(guest)
+    prefix_email: str | None = "", workplace_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(guest)
 ):
     users = await UserAssignedWorkplace.find(
         UserAssignedWorkplace.workplace.id == workplace_id,
