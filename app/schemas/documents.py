@@ -9,7 +9,7 @@ from pydantic import Field
 from app.core.exceptions import ValidationError
 
 from .models import CommentCreation, IssueBase, SprintCreation, UserRegister, WorkplaceCreation
-from .types import Role, states
+from .types import Role
 
 
 class User(Document, UserRegister):
@@ -57,7 +57,6 @@ class UserAssignedWorkplace(Document):
 
 class Workplace(Document, WorkplaceCreation):
     id: UUID = Field(default_factory=uuid4)
-    states: List[str] = Field(default_factory=states)
     users: List[Link["UserAssignedWorkplace"]] = Field(default_factory=list, exclude=True)
     sprints: List[Link["Sprint"]] = Field(default_factory=list)
 

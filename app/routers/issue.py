@@ -32,8 +32,6 @@ async def create_issue(
         raise UserNotFoundError("Пользователь не найден в воркплейсе")
     if not set(implementers).issubset(workplace.users):
         raise ValidationError("Пользователь не принадлежит worplace")
-    if issue_creation.state not in workplace.states:
-        raise ValidationError("Указанного статуса нет существует.")
     issue = Issue(
         **issue_creation.model_dump(exclude={"implementers"}),
         author=user,
@@ -94,8 +92,6 @@ async def edit_issue(
     issue = await Issue.find_one(Issue.id == issue_id, Issue.workplace_id == workplace_id, fetch_links=True)
     if issue is None:
         raise IssueNotFoundError("Такой задачи не найдено.")
-    if issue_creation.state not in issue.sprint.workplace.states:
-        raise ValidationError("Указанного статуса нет существует.")
     implementers = await alist(amap(lambda id: UserAssignedWorkplace.get(id), issue_creation.implementers))
     if len(implementers) != len(issue_creation.implementers):
         raise UserNotFoundError("Пользователь не найден в воркплейсе")

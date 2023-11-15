@@ -7,15 +7,20 @@ class Role(StrEnum):
     GUEST = "GUEST"
 
 
-def states():
-    return ["Backlog", "To do", "In Progress", "In Review", "QA", "Done"]
-
-
 class Priority(StrEnum):
     LOW = "LOW"
     NORMAL = "NORMAL"
     HIGH = "HIGH"
     URGENT = "URGRENT"
+
+
+class State(StrEnum):
+    BACKLOG = "Backlog"
+    TODO = "To do"
+    INPROGRESS = "In Progress"
+    REVIEW = "In Review"
+    QA = "QA"
+    DONE = "Done"
 
 
 class Label(StrEnum):
