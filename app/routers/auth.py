@@ -12,13 +12,13 @@ from app.core.exceptions import EmailVerificationException, UserFoundException
 from app.core.redis_session import Redis
 from app.schemas.documents import User
 from app.schemas.models import SuccessfulResponse
-from app.schemas.models.auth import Token, TokenData, UserRegister
+from app.schemas.models.auth import Token, TokenData, UserRegister, UserLogin
 
 router = APIRouter(tags=["Auth"])
 
 
 @router.post("/login", response_model=Token, status_code=status.HTTP_200_OK)
-async def login(user_auth: UserRegister = Body(...)):
+async def login(user_auth: UserLogin = Body(...)):
     """Authenticates and returns the user's JWT"""
     user = await User.by_email(user_auth.email)
     if not user:
@@ -51,7 +51,7 @@ async def register_user(
         raise UserFoundException("Юзер уже существует")
     # Отправка на почту
     background_tasks.add_task(email.send_registration_mail, request, redis, user_register)
-
+    print("gdfhgfsdhddshgdhfdhfsdc")
     return SuccessfulResponse()
 
 
@@ -63,7 +63,7 @@ async def verify_email(token: str, redis: Redis = Depends(Redis)):
 
     user_data = json.loads(check)
     hashed = get_password_hash(user_data["password"])
-    user = User(email=user_data["email"], password=hashed)
+    user = User(email=user_data["email"], password=hashed, name=user_data["name"])
     await user.create()
 
     return RedirectResponse(client_api_settings.MAIN_URL)
