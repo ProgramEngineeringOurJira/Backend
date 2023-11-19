@@ -24,7 +24,7 @@ async def login(user_auth: UserRegister = Body(...)):
     if not user:
         raise UserFoundException("Юзера нет")
     if not verify_password(user_auth.password, user.password):
-        return UserFoundException("не правильный логин или пароль")
+        raise UserFoundException("не правильный логин или пароль")
     access_token = create_access_token(TokenData(email=user.email))
     refresh_token = create_refresh_token(TokenData(email=user.email))
     return Token(access_token=access_token, refresh_token=refresh_token)
