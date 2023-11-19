@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 from uuid import UUID, uuid4
 
 from beanie import BackLink, Delete, Document, Indexed, Link, before_event
@@ -92,7 +92,7 @@ class Issue(Document, IssueBase):
     id: UUID = Field(default_factory=uuid4)
     creation_date: datetime = Field(default_factory=datetime.now)
     end_date: datetime = Field(default_factory=datetime.now)
-    author: Optional[Link["UserAssignedWorkplace"]]
+    author: Link["UserAssignedWorkplace"]
     implementers: List[Link["UserAssignedWorkplace"]] = Field(default_factory=list)
     comments: List[Link["Comment"]] = Field(default_factory=list)
     sprint: BackLink["Sprint"] = Field(default=None, original_field="issues", exclude=True)
@@ -109,7 +109,7 @@ class Issue(Document, IssueBase):
 class Comment(Document, CommentCreation):
     id: UUID = Field(default_factory=uuid4)
     creation_date: datetime = Field(default_factory=datetime.now)
-    author: Optional[Link["UserAssignedWorkplace"]]
+    author: Link["UserAssignedWorkplace"]
     issue: BackLink["Issue"] = Field(default=None, original_field="comments", exclude=True)
     workplace_id: UUID = Field(exclude=True)
     sprint_id: UUID = Field(exclude=True)
