@@ -2,11 +2,12 @@ from typing import List
 from uuid import UUID
 
 from beanie import WriteRules
+from beanie.executors import Set
 from fastapi import APIRouter, Body, Depends, Path, status
 
 from app.auth.oauth2 import admin, guest
 from app.core.exceptions import SprintNotFoundError
-from app.schemas.documents import Sprint, SprintCreation, UserAssignedWorkplace, Workplace
+from app.schemas.documents import Issue, Sprint, SprintCreation, UserAssignedWorkplace, Workplace
 from app.schemas.models import SuccessfulResponse
 
 router = APIRouter(tags=["Sprint"])
@@ -68,7 +69,7 @@ async def edit_sprint(
         raise SprintNotFoundError("Такого спринта не найдено.")
     await Sprint.validate_creation(sprint_creation, workplace_id, sprint_id)
     await sprint.update({"$set": sprint_creation.model_dump()})
-    # TODO поменять end_date в issue
+    await Issue.find(Issue.sprint_id == sprint_id).update(Set({Issue.end_date: sprint_creation.end_date}))
     return SuccessfulResponse()
 
 
