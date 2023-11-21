@@ -63,7 +63,7 @@ async def get_users(
 ):
     users = await UserAssignedWorkplace.find(
         UserAssignedWorkplace.workplace.id == workplace_id,
-        RegEx(UserAssignedWorkplace.user.email, f"^{prefix_email}"),
+        RegEx(UserAssignedWorkplace.user.email, "^" + prefix_email),
         fetch_links=True,
     ).to_list()
     return users

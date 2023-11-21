@@ -10,38 +10,41 @@ from app.schemas.documents import Issue, UserAssignedWorkplace
 router = APIRouter(tags=["Search"])
 
 
-@router.post(
-    "/{workplace_id}/search/users/{searching_string}",
+# Поиск пользователей в данном воркплейсе по строке
+@router.get(
+    "/{workplace_id}/search/users",
     response_model=List[UserAssignedWorkplace],
     response_model_by_alias=False,
     status_code=status.HTTP_200_OK,
 )
 async def search_users(
-    workplace_id: UUID = Path(...), searching_string: str = Path(...), user: UserAssignedWorkplace = Depends(member)
+    workplace_id: UUID = Path(...), searching_string: str | None = "", user: UserAssignedWorkplace = Depends(member)
 ):
     users = await UserAssignedWorkplace.find(
         UserAssignedWorkplace.workplace.id == workplace_id,
-        RegEx(UserAssignedWorkplace.user.name, f"^{searching_string}"),
+        RegEx(UserAssignedWorkplace.user.name, "^" + searching_string),
         fetch_links=True,
     ).to_list()
     return users
 
 
-@router.post(
-    "/{workplace_id}/search/issues/{searching_string}",
+# Поиск задач в данном воркплейсе по строке
+@router.get(
+    "/{workplace_id}/search/issues",
     response_model=List[Issue],
     response_model_by_alias=False,
     status_code=status.HTTP_200_OK,
 )
 async def search_issues(
-    workplace_id: UUID = Path(...), searching_string: str = Path(...), user: UserAssignedWorkplace = Depends(member)
+    workplace_id: UUID = Path(...), searching_string: str | None = "", user: UserAssignedWorkplace = Depends(member)
 ):
     issues = await Issue.find(
-        Issue.workplace.id == workplace_id, RegEx(Issue.name, f"^{searching_string}"), fetch_links=True
+        Issue.workplace.id == workplace_id, RegEx(Issue.name, "^" + searching_string), fetch_links=True
     ).to_list()
     return issues
 
 
+# Поиск всех задач, которые назначены пользователю в этом воркплейсе
 @router.get(
     "/{workplace_id}/search/user/issues",
     response_model=List[Issue],
