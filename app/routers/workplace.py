@@ -1,7 +1,7 @@
 from typing import List
 from uuid import UUID, uuid4
 
-from beanie import DeleteRules, WriteRules
+from beanie import WriteRules
 from beanie.operators import In, RegEx
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, Path, Request, status
 from fastapi.responses import RedirectResponse
@@ -29,10 +29,11 @@ async def create_workplace(workplace_creation: WorkplaceCreation = Body(...), us
     "/workplaces/{workplace_id}",
     response_model=Workplace,
     status_code=status.HTTP_200_OK,
+    response_model_by_alias=False,
     response_model_exclude={"users"},
 )
 async def get_workplace(workplace_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(guest)):
-    workplace = await Workplace.find_one(Workplace.id == workplace_id)
+    workplace = await Workplace.find_one(Workplace.id == workplace_id, fetch_links=True)
     return workplace
 
 
@@ -49,14 +50,16 @@ async def edit_workplace(
 
 @router.delete("/workplaces/{workplace_id}", response_model=None, status_code=status.HTTP_204_NO_CONTENT)
 async def delete_workplace(workplace_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(admin)):
-    await UserAssignedWorkplace.find(UserAssignedWorkplace.workplace.id == workplace_id).delete()
     workplace = await Workplace.find_one(Workplace.id == workplace_id, fetch_links=True)
-    await workplace.delete(link_rule=DeleteRules.DELETE_LINKS)
+    await workplace.delete()
     return None
 
 
 @router.get(
-    "/workplaces/{workplace_id}/users", response_model=List[UserAssignedWorkplace], status_code=status.HTTP_200_OK
+    "/workplaces/{workplace_id}/users",
+    response_model=List[UserAssignedWorkplace],
+    response_model_by_alias=False,
+    status_code=status.HTTP_200_OK,
 )
 async def get_users(
     prefix_email: str | None = "", workplace_id: UUID = Path(), user: UserAssignedWorkplace = Depends(guest)
@@ -69,7 +72,9 @@ async def get_users(
     return users
 
 
-@router.get("/workplaces", response_model=List[Workplace], status_code=status.HTTP_200_OK)
+@router.get(
+    "/workplaces", response_model=List[Workplace], response_model_by_alias=False, status_code=status.HTTP_200_OK
+)
 async def get_user_workplaces(user: UserAssignedWorkplace = Depends(get_current_user)):
     workplaces = await Workplace.find(fetch_links=True).to_list()
     # TODO убрать эту херню и сделать номарльно
