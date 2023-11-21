@@ -70,7 +70,7 @@ class Workplace(Document, WorkplaceCreation):
 
 class Sprint(Document, SprintCreation):
     id: UUID = Field(default_factory=uuid4)
-    issues: List[Link["Issue"]] = Field(default_factory=list)
+    issues: List[Link["Issue"]] = Field(default_factory=list, exclude=True)
     workplace: BackLink["Workplace"] = Field(original_field="sprints", exclude=True)
     workplace_id: UUID = Field(exclude=True)
 

@@ -2,12 +2,14 @@ from typing import List
 from uuid import UUID
 
 from beanie import WriteRules
+from beanie.operators import Set
 from fastapi import APIRouter, Body, Depends, Path, status
 
 from app.auth.oauth2 import admin, guest
 from app.core.exceptions import SprintNotFoundError
-from app.schemas.documents import Sprint, SprintCreation, UserAssignedWorkplace, Workplace
+from app.schemas.documents import Issue, Sprint, SprintCreation, UserAssignedWorkplace, Workplace
 from app.schemas.models import SuccessfulResponse
+from app.schemas.responses import Column, SprintResponse
 
 router = APIRouter(tags=["Sprint"])
 
@@ -27,7 +29,7 @@ async def create_sprint(
 
 @router.get(
     "/{workplace_id}/sprints/{sprint_id}",
-    response_model=Sprint,
+    response_model=SprintResponse,
     response_model_by_alias=False,
     status_code=status.HTTP_200_OK,
 )
@@ -37,22 +39,21 @@ async def get_sprint(
     sprint = await Sprint.find_one(Sprint.id == sprint_id, Sprint.workplace_id == workplace_id, fetch_links=True)
     if sprint is None:
         raise SprintNotFoundError("Такого спринта не найдено.")
-    return sprint
+    issues = Column.group(sprint.issues)
+    return SprintResponse(**sprint.model_dump(), columns=issues)
 
 
 @router.get(
-    "/{workplace_id}/sprints/list/{skip}/{limit}",
+    "/{workplace_id}/sprints",
     response_model=List[Sprint],
     response_model_by_alias=False,
     status_code=status.HTTP_200_OK,
 )
 async def get_sprints(
     workplace_id: UUID = Path(...),
-    skip: int = Path(...),
-    limit: int = Path(...),
     user: UserAssignedWorkplace = Depends(guest),
 ):
-    sprints = await Sprint.find(Sprint.workplace_id == workplace_id, fetch_links=True).skip(skip).limit(limit).to_list()
+    sprints = await Sprint.find(Sprint.workplace_id == workplace_id, fetch_links=True).to_list()
     return sprints
 
 
@@ -68,7 +69,7 @@ async def edit_sprint(
         raise SprintNotFoundError("Такого спринта не найдено.")
     await Sprint.validate_creation(sprint_creation, workplace_id, sprint_id)
     await sprint.update({"$set": sprint_creation.model_dump()})
-    # TODO поменять end_date в issue
+    await Issue.find(Issue.sprint_id == sprint_id).update(Set({Issue.end_date: sprint_creation.end_date}))
     return SuccessfulResponse()
 
 
