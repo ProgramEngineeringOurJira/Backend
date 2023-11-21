@@ -6,7 +6,7 @@ from fastapi import APIRouter, Body, Depends, Path, status
 
 from app.auth.oauth2 import admin, guest
 from app.core.exceptions import SprintNotFoundError
-from app.schemas.documents import Comment, Issue, Sprint, SprintCreation, UserAssignedWorkplace, Workplace
+from app.schemas.documents import Sprint, SprintCreation, UserAssignedWorkplace, Workplace
 from app.schemas.models import SuccessfulResponse
 
 router = APIRouter(tags=["Sprint"])
@@ -79,9 +79,5 @@ async def delete_sprint(
     sprint = await Sprint.find_one(Sprint.workplace_id == workplace_id, Sprint.id == sprint_id, fetch_links=True)
     if sprint is None:
         raise SprintNotFoundError("Такого спринта не найдено.")
-    sprint.workplace.sprints.remove(sprint.id)
-    await sprint.workplace.save(link_rule=WriteRules.WRITE)
-    await Comment.find(Comment.sprint_id == sprint_id).delete()
-    await Issue.find(Issue.sprint_id == sprint_id).delete()
     await sprint.delete()
     return None

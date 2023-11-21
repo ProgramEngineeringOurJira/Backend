@@ -121,8 +121,5 @@ async def delete_issue(
     issue = await Issue.find_one(Issue.id == issue_id, Issue.workplace_id == workplace_id, fetch_links=True)
     if issue is None:
         raise IssueNotFoundError("Такой задачи не найдено.")
-    issue.sprint.issues.remove(issue_id)
-    await issue.sprint.save(link_rule=WriteRules.WRITE)
-    await Comment.find(Comment.issue_id == issue_id).delete()
     await issue.delete()
     return None

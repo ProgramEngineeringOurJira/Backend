@@ -95,7 +95,5 @@ async def delete_comment(
     comment = await Comment.find_one(Comment.id == comment_id, Comment.workplace_id == workplace_id, fetch_links=True)
     if comment is None:
         raise CommentNotFoundError("Такого комментария не найдено.")
-    comment.issue.comments.remove(comment_id)
-    await comment.issue.save(link_rule=WriteRules.WRITE)
     await comment.delete()
     return None
