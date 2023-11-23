@@ -1,15 +1,15 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 from uuid import UUID, uuid4
 
-from beanie import BackLink, Delete, Document, Indexed, Link, before_event
+from beanie import BackLink, Delete, Document, Indexed, Link, WriteRules, before_event
 from beanie.odm.operators.find.logical import And, Or
 from pydantic import Field
 
 from app.core.exceptions import ValidationError
 
 from .models import CommentCreation, IssueBase, SprintCreation, UserRegister, WorkplaceCreation
-from .types import Role, states
+from .types import Role
 
 
 class User(Document, UserRegister):
@@ -38,8 +38,9 @@ class User(Document, UserRegister):
 class UserAssignedWorkplace(Document):
     id: UUID = Field(default_factory=uuid4)
     user: Link["User"]
-    workplace: BackLink["Workplace"] = Field(original_field="users", exclude=True)
     role: Role
+    workplace: BackLink["Workplace"] = Field(original_field="users", exclude=True)
+    workplace_id: UUID = Field(exclude=True)
 
     @before_event(Delete)
     async def delete_refs(self):
@@ -57,25 +58,31 @@ class UserAssignedWorkplace(Document):
 
 class Workplace(Document, WorkplaceCreation):
     id: UUID = Field(default_factory=uuid4)
-    states: List[str] = Field(default_factory=states)
     users: List[Link["UserAssignedWorkplace"]] = Field(default_factory=list, exclude=True)
     sprints: List[Link["Sprint"]] = Field(default_factory=list)
-    issues: List[Link["Issue"]] = Field(default_factory=list)
+
+    @before_event(Delete)
+    async def delete_refs(self):
+        await UserAssignedWorkplace.find(UserAssignedWorkplace.workplace_id == self.id).delete()
+        await Comment.find(Comment.workplace_id == self.id).delete()
+        await Issue.find(Issue.workplace_id == self.id).delete()
+        await Sprint.find(Sprint.workplace_id == self.id).delete()
 
 
 class Sprint(Document, SprintCreation):
     id: UUID = Field(default_factory=uuid4)
+    issues: List[Link["Issue"]] = Field(default_factory=list, exclude=True)
     workplace: BackLink["Workplace"] = Field(original_field="sprints", exclude=True)
-    issues: List[Link["Issue"]] = Field(default_factory=list)
+    workplace_id: UUID = Field(exclude=True)
 
     @before_event(Delete)
-    async def delete_ref_workplace(self):
+    async def delete_refs(self):
         self.workplace.sprints.remove(self.id)
-        await self.workplace.save()
+        await self.workplace.save(link_rule=WriteRules.WRITE)
+        await Comment.find(Comment.sprint_id == self.id).delete()
+        await Issue.find(Issue.sprint_id == self.id).delete()
 
-    async def validate_creation(
-        sprint_creation: SprintCreation, workplace_id: UUID, sprint_id: UUID = None, check_self=False
-    ):
+    async def validate_creation(sprint_creation: SprintCreation, workplace_id: UUID, sprint_id: UUID = None):
         find_sprint = await Sprint.find_one(
             Sprint.workplace.id == workplace_id,
             Or(
@@ -99,21 +106,19 @@ class Sprint(Document, SprintCreation):
 class Issue(Document, IssueBase):
     id: UUID = Field(default_factory=uuid4)
     creation_date: datetime = Field(default_factory=datetime.now)
-    workplace: BackLink["Workplace"] = Field(original_field="issues", exclude=True)
-    author: Optional[Link["UserAssignedWorkplace"]]
-    sprint: Optional[BackLink["Sprint"]] = Field(default=None, original_field="issues", exclude=True)
+    end_date: datetime = Field(default_factory=datetime.now)
+    author: Link["UserAssignedWorkplace"]
     implementers: List[Link["UserAssignedWorkplace"]] = Field(default_factory=list)
     comments: List[Link["Comment"]] = Field(default_factory=list)
+    sprint: BackLink["Sprint"] = Field(default=None, original_field="issues", exclude=True)
+    workplace_id: UUID = Field(exclude=True)
+    sprint_id: UUID = Field(exclude=True)
 
     @before_event(Delete)
     async def delete_refs(self):
-        self.workplace.issues.remove(self.id)
-        await self.workplace.save()
-        if self.sprint is not None:
-            self.sprint.issues.remove(self.id)
-            self.sprint.save()
-        self.author = None
-        self.implementers = []
+        self.sprint.issues.remove(self.id)
+        await self.sprint.save(link_rule=WriteRules.WRITE)
+        await Comment.find(Comment.issue_id == self.id).delete()
 
     def __eq__(self, other):
         if not isinstance(other, (Issue, UUID)):
@@ -125,14 +130,16 @@ class Issue(Document, IssueBase):
 class Comment(Document, CommentCreation):
     id: UUID = Field(default_factory=uuid4)
     creation_date: datetime = Field(default_factory=datetime.now)
-    author: Optional[Link["UserAssignedWorkplace"]]
+    author: Link["UserAssignedWorkplace"]
     issue: BackLink["Issue"] = Field(default=None, original_field="comments", exclude=True)
+    workplace_id: UUID = Field(exclude=True)
+    sprint_id: UUID = Field(exclude=True)
+    issue_id: UUID = Field(exclude=True)
 
     @before_event(Delete)
     async def delete_refs(self):
         self.issue.comments.remove(self.id)
-        await self.issue.save()
-        self.author = None
+        await self.issue.save(link_rule=WriteRules.WRITE)
 
     def __eq__(self, other):
         if not isinstance(other, (Comment, UUID)):

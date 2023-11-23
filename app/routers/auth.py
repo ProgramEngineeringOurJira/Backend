@@ -24,7 +24,7 @@ async def login(user_auth: UserLogin = Body(...)):
     if not user:
         raise UserFoundException("Юзера нет")
     if not verify_password(user_auth.password, user.password):
-        return UserFoundException("не правильный логин или пароль")
+        raise UserFoundException("не правильный логин или пароль")
     access_token = create_access_token(TokenData(email=user.email))
     refresh_token = create_refresh_token(TokenData(email=user.email))
     return Token(access_token=access_token, refresh_token=refresh_token)
@@ -68,6 +68,6 @@ async def verify_email(token: str, redis: Redis = Depends(Redis)):
     return RedirectResponse(client_api_settings.MAIN_URL)
 
 
-@router.get("/profile/", response_model=User, status_code=status.HTTP_200_OK)
+@router.get("/profile/", response_model=User, response_model_by_alias=False, status_code=status.HTTP_200_OK)
 async def get_user_profile(user: User = Depends(get_current_user)):
     return user
