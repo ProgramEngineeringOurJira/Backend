@@ -9,7 +9,7 @@ from app.auth.oauth2 import admin, guest
 from app.core.exceptions import SprintNotFoundError
 from app.schemas.documents import Issue, Sprint, SprintCreation, UserAssignedWorkplace, Workplace
 from app.schemas.models import SuccessfulResponse
-from app.schemas.responses import Column, SprintResponse
+from app.schemas.models.responses import Column, SprintResponse
 
 router = APIRouter(tags=["Sprint"])
 
