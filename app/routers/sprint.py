@@ -2,7 +2,6 @@ from typing import List
 from uuid import UUID
 
 from beanie import WriteRules
-
 from beanie.operators import Set
 from fastapi import APIRouter, Body, Depends, Path, status
 
