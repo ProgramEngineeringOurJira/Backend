@@ -55,9 +55,15 @@ class EmailSettings(BaseSettings):
         extra = "ignore"
 
 
+class AvatarSettings(BaseSettings):
+    AVATAR_SIZE: int = 5 * 12
+    BACKGROUND_COLOR: str = "#f2f1f2"
+
+
 client_api_settings = ClientAPISettings()
 mongo_settings = MongoDsnSettings(extra="ignore")
 redis_settings = RedisSettings(extra="ignore")
 email_settings = EmailSettings()
+avatar_settings = AvatarSettings()
 
 # TODO: сделать получение настроек через DI

@@ -1,14 +1,16 @@
 import json
+import pathlib
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, Request, status
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse
 
 from app.auth.hash import get_password_hash, verify_password
 from app.auth.jwt_token import create_access_token, create_refresh_token
 from app.auth.oauth2 import get_current_user
 from app.config import client_api_settings
+from app.core.avatar import avatar
 from app.core.email import Email
-from app.core.exceptions import EmailVerificationException, UserFoundException
+from app.core.exceptions import AvatarNotFoundException, EmailVerificationException, UserFoundException
 from app.core.redis_session import Redis
 from app.schemas.documents import User
 from app.schemas.models import SuccessfulResponse
@@ -62,6 +64,8 @@ async def verify_email(token: str, redis: Redis = Depends(Redis)):
 
     user_data = json.loads(check)
     hashed = get_password_hash(user_data["password"])
+    await avatar.generate_avatar(user_data["name"])
+
     user = User(email=user_data["email"], password=hashed, name=user_data["name"])
     await user.create()
 
@@ -71,3 +75,15 @@ async def verify_email(token: str, redis: Redis = Depends(Redis)):
 @router.get("/profile/", response_model=User, response_model_by_alias=False, status_code=status.HTTP_200_OK)
 async def get_user_profile(user: User = Depends(get_current_user)):
     return user
+
+
+@router.get("/profile/avatar", response_model=User, response_model_by_alias=False, status_code=status.HTTP_200_OK)
+async def get_user_avatar(user: User = Depends(get_current_user)):
+    storage = pathlib.Path(__file__).parent.parent.parent.resolve()
+    avatar_folder = storage.joinpath(pathlib.Path("assets/avatars"))
+    avatar_path = avatar_folder.joinpath(pathlib.Path(user.name + ".png"))
+
+    if not pathlib.Path.is_file(avatar_path):
+        raise AvatarNotFoundException("Файл не найден")
+
+    return FileResponse(avatar_path)

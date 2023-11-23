@@ -1,7 +1,7 @@
 from typing import List
 from uuid import UUID
 
-from beanie.operators import RegEx, ElemMatch, In
+from beanie.operators import RegEx
 from fastapi import APIRouter, Depends, Path, status
 
 from app.auth.oauth2 import member
@@ -52,21 +52,6 @@ async def search_issues(
     status_code=status.HTTP_200_OK,
 )
 async def search_issues_for_user(workplace_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(member)):
-    # Выдаёт пустой список (рекомендовал Артемий)
-    # issues = await Issue.find(
-    #     Issue.workplace.id == workplace_id,
-    #     ElemMatch(Issue.implementers, {"id": user.id}),
-    #     fetch_links=True
-    # ).to_list()
-
-    # Не работает и никогда не будет работать (это твой вариант)
-    # issues = await Issue.find(
-    #     Issue.workplace.id == workplace_id,
-    #     In(Issue.implementers, [user]),
-    #     fetch_links=True
-    # ).to_list()
-
-    # Мой рабочий вариант
     issues = await Issue.find(Issue.workplace.id == workplace_id, fetch_links=True).to_list()
     user_issues = [i for i in issues if user in i.implementers]
     return user_issues
