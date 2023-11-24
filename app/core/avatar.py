@@ -1,7 +1,6 @@
 import pathlib
 from hashlib import md5
 from os import makedirs
-from typing import List
 
 from numpy import array, concatenate
 from PIL import Image, ImageDraw
@@ -16,11 +15,11 @@ class Avatar:
             cls.instance = super(Avatar, cls).__new__(cls)
         return cls.instance
 
-    background_color: str = avatar_settings.BACKGROUND_COLOR
+    background_color = avatar_settings.BACKGROUND_COLOR
 
     avatar_size = avatar_settings.AVATAR_SIZE
 
-    async def generate_avatar(self, user_name: str) -> List[List[bool]]:
+    async def generate_avatar(self, user_name: str):
         bytes = md5(user_name.encode("utf-8")).digest()
 
         need_color = array([bit == "1" for byte in bytes[3 : 3 + 9] for bit in bin(byte)[2:].zfill(8)]).reshape(6, 12)
