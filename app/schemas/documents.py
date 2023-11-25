@@ -16,7 +16,7 @@ class User(Document, UserRegister):
     id: UUID = Field(default_factory=uuid4)
     email: Indexed(str, unique=True)
     password: str = Field(exclude=True)
-    name: str = Indexed(str, unique=True)
+    name: str = Field()
 
     @property
     def created(self) -> datetime:

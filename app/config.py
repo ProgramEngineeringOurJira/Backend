@@ -56,8 +56,12 @@ class EmailSettings(BaseSettings):
 
 
 class AvatarSettings(BaseSettings):
-    AVATAR_SIZE: int = 5 * 12
-    BACKGROUND_COLOR: str = "#f2f1f2"
+    AVATAR_SIZE: int
+    BACKGROUND_COLOR: str
+
+    class Config:
+        env_file = ".env"
+        extra = "ignore"
 
 
 client_api_settings = ClientAPISettings()

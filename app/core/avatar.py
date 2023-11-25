@@ -19,8 +19,8 @@ class Avatar:
 
     avatar_size = avatar_settings.AVATAR_SIZE
 
-    async def generate_avatar(self, user_name: str):
-        bytes = md5(user_name.encode("utf-8")).digest()
+    async def generate_avatar(self, user_id_str: str):
+        bytes = md5(user_id_str.encode("utf-8")).digest()
 
         need_color = array([bit == "1" for byte in bytes[3 : 3 + 9] for bit in bin(byte)[2:].zfill(8)]).reshape(6, 12)
         need_color = concatenate((need_color, need_color[::-1]), axis=0)
@@ -53,7 +53,7 @@ class Avatar:
         avatar_folder = storage.joinpath(pathlib.Path("assets/avatars"))
         makedirs(avatar_folder, exist_ok=True)
 
-        avatar_path = avatar_folder.joinpath(pathlib.Path(user_name + ".png"))
+        avatar_path = avatar_folder.joinpath(pathlib.Path(user_id_str + ".png"))
         img.save(avatar_path, "png")
 
 

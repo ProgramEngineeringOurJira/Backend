@@ -21,7 +21,7 @@ async def search_users(
     workplace_id: UUID = Path(...), searching_string: str | None = "", user: UserAssignedWorkplace = Depends(member)
 ):
     users = await UserAssignedWorkplace.find(
-        UserAssignedWorkplace.workplace.id == workplace_id,
+        UserAssignedWorkplace.workplace_id == workplace_id,
         RegEx(UserAssignedWorkplace.user.name, "^" + searching_string),
         fetch_links=True,
     ).to_list()
@@ -39,7 +39,7 @@ async def search_issues(
     workplace_id: UUID = Path(...), searching_string: str | None = "", user: UserAssignedWorkplace = Depends(member)
 ):
     issues = await Issue.find(
-        Issue.workplace.id == workplace_id, RegEx(Issue.name, "^" + searching_string), fetch_links=True
+        Issue.workplace_id == workplace_id, RegEx(Issue.name, "^" + searching_string), fetch_links=True
     ).to_list()
     return issues
 
@@ -52,6 +52,6 @@ async def search_issues(
     status_code=status.HTTP_200_OK,
 )
 async def search_issues_for_user(workplace_id: UUID = Path(...), user: UserAssignedWorkplace = Depends(member)):
-    issues = await Issue.find(Issue.workplace.id == workplace_id, fetch_links=True).to_list()
+    issues = await Issue.find(Issue.workplace_id == workplace_id, fetch_links=True).to_list()
     user_issues = [i for i in issues if user in i.implementers]
     return user_issues

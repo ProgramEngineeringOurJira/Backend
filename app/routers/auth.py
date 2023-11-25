@@ -64,9 +64,10 @@ async def verify_email(token: str, redis: Redis = Depends(Redis)):
 
     user_data = json.loads(check)
     hashed = get_password_hash(user_data["password"])
-    await avatar.generate_avatar(user_data["name"])
 
     user = User(email=user_data["email"], password=hashed, name=user_data["name"])
+    await avatar.generate_avatar(str(user.id))
+
     await user.create()
 
     return RedirectResponse(client_api_settings.MAIN_URL)
@@ -77,13 +78,13 @@ async def get_user_profile(user: User = Depends(get_current_user)):
     return user
 
 
-@router.get("/profile/avatar", response_model=User, response_model_by_alias=False, status_code=status.HTTP_200_OK)
+@router.get("/profile/avatar", response_class=FileResponse, status_code=status.HTTP_200_OK)
 async def get_user_avatar(user: User = Depends(get_current_user)):
     storage = pathlib.Path(__file__).parent.parent.parent.resolve()
     avatar_folder = storage.joinpath(pathlib.Path("assets/avatars"))
-    avatar_path = avatar_folder.joinpath(pathlib.Path(user.name + ".png"))
+    avatar_path = avatar_folder.joinpath(pathlib.Path(str(user.id) + ".png"))
 
     if not pathlib.Path.is_file(avatar_path):
-        raise AvatarNotFoundException("Файл не найден")
+        raise AvatarNotFoundException("Аватарка не найдена")
 
     return FileResponse(avatar_path)
