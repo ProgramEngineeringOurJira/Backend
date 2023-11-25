@@ -1,24 +1,26 @@
 import json
+import pathlib
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, Request, status
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse
 
 from app.auth.hash import get_password_hash, verify_password
 from app.auth.jwt_token import create_access_token, create_refresh_token
 from app.auth.oauth2 import get_current_user
 from app.config import client_api_settings
+from app.core.avatar import avatar
 from app.core.email import Email
-from app.core.exceptions import EmailVerificationException, UserFoundException
+from app.core.exceptions import AvatarNotFoundException, EmailVerificationException, UserFoundException
 from app.core.redis_session import Redis
 from app.schemas.documents import User
 from app.schemas.models import SuccessfulResponse
-from app.schemas.models.auth import Token, TokenData, UserRegister
+from app.schemas.models.auth import Token, TokenData, UserLogin, UserRegister
 
 router = APIRouter(tags=["Auth"])
 
 
 @router.post("/login", response_model=Token, status_code=status.HTTP_200_OK)
-async def login(user_auth: UserRegister = Body(...)):
+async def login(user_auth: UserLogin = Body(...)):
     """Authenticates and returns the user's JWT"""
     user = await User.by_email(user_auth.email)
     if not user:
@@ -51,7 +53,6 @@ async def register_user(
         raise UserFoundException("Юзер уже существует")
     # Отправка на почту
     background_tasks.add_task(email.send_registration_mail, request, redis, user_register)
-
     return SuccessfulResponse()
 
 
@@ -63,7 +64,10 @@ async def verify_email(token: str, redis: Redis = Depends(Redis)):
 
     user_data = json.loads(check)
     hashed = get_password_hash(user_data["password"])
-    user = User(email=user_data["email"], password=hashed)
+
+    user = User(email=user_data["email"], password=hashed, name=user_data["name"])
+    await avatar.generate_avatar(str(user.id))
+
     await user.create()
 
     return RedirectResponse(client_api_settings.MAIN_URL)
@@ -72,3 +76,15 @@ async def verify_email(token: str, redis: Redis = Depends(Redis)):
 @router.get("/profile/", response_model=User, response_model_by_alias=False, status_code=status.HTTP_200_OK)
 async def get_user_profile(user: User = Depends(get_current_user)):
     return user
+
+
+@router.get("/profile/avatar", response_class=FileResponse, status_code=status.HTTP_200_OK)
+async def get_user_avatar(user: User = Depends(get_current_user)):
+    storage = pathlib.Path(__file__).parent.parent.parent.resolve()
+    avatar_folder = storage.joinpath(pathlib.Path("assets/avatars"))
+    avatar_path = avatar_folder.joinpath(pathlib.Path(str(user.id) + ".png"))
+
+    if not pathlib.Path.is_file(avatar_path):
+        raise AvatarNotFoundException("Аватарка не найдена")
+
+    return FileResponse(avatar_path)

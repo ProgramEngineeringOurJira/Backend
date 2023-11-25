@@ -103,3 +103,13 @@ class EmailVerificationException(CommonException):
 class WorkplaceFileNotFoundException(CommonException):
     def __init__(self, error: str) -> None:
         super().__init__(status.HTTP_404_NOT_FOUND, error)
+
+
+class AvatarNotFoundException(CommonException):
+    def __init__(self, error: str) -> None:
+        super().__init__(status.HTTP_404_NOT_FOUND, error)
+
+
+class AvatarSizeNotCorrectException(CommonException):
+    def __init__(self, error: str) -> None:
+        super().__init__(status.HTTP_500_INTERNAL_SERVER_ERROR, error)
