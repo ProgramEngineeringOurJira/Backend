@@ -14,7 +14,7 @@ class Avatar:
 
     avatar_size = avatar_settings.AVATAR_SIZE
 
-    @classmethod
+    @staticmethod
     async def generate_avatar(self, user_id_str: str):
         bytes = md5(user_id_str.encode("utf-8")).digest()
 
