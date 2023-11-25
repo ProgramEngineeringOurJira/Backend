@@ -10,15 +10,11 @@ from app.core.exceptions import AvatarSizeNotCorrectException
 
 
 class Avatar:
-    def __new__(cls):
-        if not hasattr(cls, "instance"):
-            cls.instance = super(Avatar, cls).__new__(cls)
-        return cls.instance
-
     background_color = avatar_settings.BACKGROUND_COLOR
 
     avatar_size = avatar_settings.AVATAR_SIZE
 
+    @classmethod
     async def generate_avatar(self, user_id_str: str):
         bytes = md5(user_id_str.encode("utf-8")).digest()
 
@@ -55,6 +51,3 @@ class Avatar:
 
         avatar_path = avatar_folder.joinpath(pathlib.Path(user_id_str + ".png"))
         img.save(avatar_path, "png")
-
-
-avatar = Avatar()
