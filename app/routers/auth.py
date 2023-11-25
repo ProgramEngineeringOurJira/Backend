@@ -8,7 +8,7 @@ from app.auth.hash import get_password_hash, verify_password
 from app.auth.jwt_token import create_access_token, create_refresh_token
 from app.auth.oauth2 import get_current_user
 from app.config import client_api_settings
-from app.core.avatar import Avatar
+from app.core.avatar import create_avatar
 from app.core.email import Email
 from app.core.exceptions import AvatarNotFoundException, EmailVerificationException, UserFoundException
 from app.core.redis_session import Redis
@@ -66,7 +66,7 @@ async def verify_email(token: str, redis: Redis = Depends(Redis)):
     hashed = get_password_hash(user_data["password"])
 
     user = User(email=user_data["email"], password=hashed, name=user_data["name"])
-    await Avatar.generate_avatar(str(user.id))
+    await create_avatar(str(user.id))
 
     await user.create()
 
