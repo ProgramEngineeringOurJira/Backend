@@ -29,7 +29,7 @@ async def get_file(
     workplace_id: UUID = Path(...), filename: str = Path(...), user: UserAssignedWorkplace = Depends(member)
 ):
     local_storage = pathlib.Path(__file__).parent.parent.parent.resolve()
-    path_file = local_storage.joinpath(pathlib.Path(f"assets/{workplace_id}/{filename}"))
+    path_file = local_storage.joinpath(pathlib.Path(f"assets/workplaces_files/{workplace_id}/{filename}"))
     if not pathlib.Path.is_file(path_file):
         raise WorkplaceFileNotFoundException("Файл не найден")
     return FileResponse(path_file)

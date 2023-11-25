@@ -10,7 +10,7 @@ class DownloadFiles:
         async def download_file(file: UploadFile, workplace_id: UUID) -> dict:
             local_storage = pathlib.Path(__file__).parent.parent.parent.resolve()
 
-            main_download_folder = local_storage.joinpath(pathlib.Path("assets"))
+            main_download_folder = local_storage.joinpath(pathlib.Path("assets/workplaces_files"))
             workplace_download_folder = main_download_folder.joinpath(pathlib.Path(f"{workplace_id}"))
             makedirs(main_download_folder, exist_ok=True)
             makedirs(workplace_download_folder, exist_ok=True)
