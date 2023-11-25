@@ -1,23 +1,23 @@
-from itertools import groupby
 from typing import List
 
 from pydantic import BaseModel, Field
 
 from app.schemas.documents import Issue, Sprint
+from app.schemas.types import State
 
 
 class Column(BaseModel):
-    name: str
-    issues: List[Issue]
+    name: State
+    issues: List[Issue] = Field(default_factory=list)
 
     @staticmethod
     def group(issues: List[Issue]) -> List["Column"]:
-        sorted_issues = sorted(issues, key=lambda issue: issue.state)
-        grouped_issues = [
-            Column(name=key.value, issues=result)
-            for key, result in groupby(sorted_issues, key=lambda issue: issue.state)
-        ]
-        return grouped_issues
+        columns = [Column(name=state) for state in State]
+        for issue in issues:
+            for column in columns:
+                if issue.state == column.name:
+                    column.issues.append(issue)
+        return columns
 
 
 class SprintResponse(Sprint):
