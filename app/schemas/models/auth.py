@@ -22,7 +22,7 @@ class TokenData(BaseModel):
 
 class UserRegister(BaseModel):
     email: EmailStr
-    name: str = Field(max_length=20) 
+    name: str = Field(max_length=20)
     password: str
 
 
