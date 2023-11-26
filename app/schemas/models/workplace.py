@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 
 
 class WorkplaceCreation(BaseModel):
@@ -9,4 +9,8 @@ class WorkplaceCreation(BaseModel):
 
 
 class FileModelOut(BaseModel):
-    url: str = Field()
+    url: str
+
+
+class InviteModel(BaseModel):
+    email: EmailStr
