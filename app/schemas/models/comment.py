@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 class CommentCreation(BaseModel):
     text: str
-    files: List[str] = Field(default=list())
+    files: Optional[List[str]] = Field(default=list())
 
 
 class CommentUpdate(BaseModel):

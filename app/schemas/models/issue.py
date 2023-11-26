@@ -12,6 +12,7 @@ class IssueBase(BaseModel):
     priority: Priority
     state: State
     label: Label
+    files: Optional[List[str]] = Field(default=list())
 
 
 class IssueCreation(IssueBase):
@@ -27,3 +28,4 @@ class IssueUpdate(BaseModel):
     label: Optional[Label]
     sprint_id: Optional[UUID] = None
     implementers: Optional[List[UUID]]
+    files: Optional[List[str]]
