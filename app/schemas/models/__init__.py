@@ -1,6 +1,6 @@
 from .auth import SuccessfulResponse, Token, TokenData, TokenType, UserLogin, UserRegister
 from .comment import CommentCreation, CommentUpdate
-from .issue import IssueBase, IssueCreation
+from .issue import IssueBase, IssueCreation, IssueUpdate
 from .sprint import SprintCreation
 from .workplace import FileModelOut, WorkplaceCreation
 
@@ -18,4 +18,5 @@ __all__ = [
     "CommentCreation",
     "CommentUpdate",
     "FileModelOut",
+    "IssueUpdate",
 ]

@@ -10,7 +10,7 @@ from fastapi import APIRouter, Body, Depends, Path, status
 from app.auth.oauth2 import guest, member
 from app.core.exceptions import IssueNotFoundError, SprintNotFoundError, UserNotFoundError, ValidationError
 from app.schemas.documents import Comment, Issue, Sprint, UserAssignedWorkplace
-from app.schemas.models import IssueCreation, SuccessfulResponse
+from app.schemas.models import IssueCreation, SuccessfulResponse, IssueUpdate
 
 router = APIRouter(tags=["Issue"])
 
@@ -32,12 +32,12 @@ async def create_issue(
         raise UserNotFoundError("Пользователь не найден в воркплейсе")
     if not set(implementers).issubset(workplace.users):
         raise ValidationError("Пользователь не принадлежит worplace")
+    await Issue.validate_creation(issue_creation)
     issue = Issue(
         **issue_creation.model_dump(exclude={"implementers"}),
         author=user,
         implementers=implementers,
         workplace_id=workplace_id,
-        end_date=sprint.end_date
     )
     sprint.issues.append(issue)
     await sprint.save(link_rule=WriteRules.WRITE)
@@ -84,7 +84,7 @@ async def get_workplace_issues(workplace_id: UUID = Path(...), user: UserAssigne
 
 @router.put("/{workplace_id}/issues{issue_id}", response_model=SuccessfulResponse, status_code=status.HTTP_200_OK)
 async def edit_issue(
-    issue_creation: IssueCreation = Body(...),
+    issue_update: IssueUpdate = Body(...),
     workplace_id: UUID = Path(...),
     issue_id: UUID = Path(...),
     user: UserAssignedWorkplace = Depends(member),
@@ -92,14 +92,17 @@ async def edit_issue(
     issue = await Issue.find_one(Issue.id == issue_id, Issue.workplace_id == workplace_id, fetch_links=True)
     if issue is None:
         raise IssueNotFoundError("Такой задачи не найдено.")
-    implementers = await alist(amap(lambda id: UserAssignedWorkplace.get(id), issue_creation.implementers))
-    if len(implementers) != len(issue_creation.implementers):
-        raise UserNotFoundError("Пользователь не найден в воркплейсе")
-    if not set(implementers).issubset(issue.sprint.workplace.users):
-        raise ValidationError("Пользователь не принадлежит worplace")
-    if issue_creation.sprint_id != issue.sprint_id:
+    if issue_update.implementers != None:
+        implementers = await alist(amap(lambda id: UserAssignedWorkplace.get(id), issue_update.implementers))
+        if len(implementers) != len(issue_update.implementers):
+            raise UserNotFoundError("Пользователь не найден в воркплейсе")
+        if not set(implementers).issubset(issue.sprint.workplace.users):
+            raise ValidationError("Пользователь не принадлежит worplace")
+        issue.implementers = implementers
+        await issue.save()
+    if issue_update.sprint_id != None and issue_update.sprint_id != issue.sprint_id:
         sprint = await Sprint.find_one(
-            Sprint.workplace_id == workplace_id, Sprint.id == issue_creation.sprint_id, fetch_links=False
+            Sprint.workplace_id == workplace_id, Sprint.id == issue_update.sprint_id, fetch_links=False
         )  # именно False!
         if sprint is None:
             raise SprintNotFoundError("Нет такого спринта")
@@ -108,10 +111,10 @@ async def edit_issue(
         sprint.issues.append(issue)
         issue.end_date = sprint.end_date
         await sprint.save(link_rule=WriteRules.WRITE)
-    issue.implementers = implementers
-    await issue.save()
-    await issue.update({"$set": issue_creation.model_dump(exclude="author,implementers")})
-    await Comment.find(Comment.issue_id == issue_id).update(Set({Comment.sprint_id: issue_creation.sprint_id}))
+    if issue_update.end_date != None:
+        await Issue.validate_update(issue_update, issue.creation_date, issue.sprint_id)
+    await issue.update({"$set": issue_update.model_dump(exclude="author,implementers")})
+    await Comment.find(Comment.issue_id == issue_id).update(Set({Comment.sprint_id: issue.sprint_id}))
     return SuccessfulResponse()
 
 
