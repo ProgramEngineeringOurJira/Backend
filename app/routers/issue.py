@@ -10,7 +10,7 @@ from fastapi import APIRouter, Body, Depends, Path, status
 from app.auth.oauth2 import guest, member
 from app.core.exceptions import IssueNotFoundError, SprintNotFoundError, UserNotFoundError, ValidationError
 from app.schemas.documents import Comment, Issue, Sprint, UserAssignedWorkplace
-from app.schemas.models import IssueCreation, SuccessfulResponse, IssueUpdate
+from app.schemas.models import IssueCreation, IssueUpdate, SuccessfulResponse
 
 router = APIRouter(tags=["Issue"])
 
@@ -32,13 +32,13 @@ async def create_issue(
         raise UserNotFoundError("Пользователь не найден в воркплейсе")
     if not set(implementers).issubset(workplace.users):
         raise ValidationError("Пользователь не принадлежит worplace")
-    await Issue.validate_creation(issue_creation)
     issue = Issue(
         **issue_creation.model_dump(exclude={"implementers"}),
         author=user,
         implementers=implementers,
         workplace_id=workplace_id,
     )
+    issue.validate_creation()
     sprint.issues.append(issue)
     await sprint.save(link_rule=WriteRules.WRITE)
     return SuccessfulResponse()
@@ -92,15 +92,16 @@ async def edit_issue(
     issue = await Issue.find_one(Issue.id == issue_id, Issue.workplace_id == workplace_id, fetch_links=True)
     if issue is None:
         raise IssueNotFoundError("Такой задачи не найдено.")
-    if issue_update.implementers != None:
+    issue.end_date = issue_update.end_date
+    issue.validate_creation()
+    if issue_update.implementers is not None:
         implementers = await alist(amap(lambda id: UserAssignedWorkplace.get(id), issue_update.implementers))
         if len(implementers) != len(issue_update.implementers):
             raise UserNotFoundError("Пользователь не найден в воркплейсе")
         if not set(implementers).issubset(issue.sprint.workplace.users):
             raise ValidationError("Пользователь не принадлежит worplace")
         issue.implementers = implementers
-        await issue.save()
-    if issue_update.sprint_id != None and issue_update.sprint_id != issue.sprint_id:
+    if issue_update.sprint_id is not None and issue_update.sprint_id != issue.sprint_id:
         sprint = await Sprint.find_one(
             Sprint.workplace_id == workplace_id, Sprint.id == issue_update.sprint_id, fetch_links=False
         )  # именно False!
@@ -109,11 +110,9 @@ async def edit_issue(
         issue.sprint.issues.remove(issue.id)
         await issue.sprint.save(link_rule=WriteRules.WRITE)
         sprint.issues.append(issue)
-        issue.end_date = sprint.end_date
         await sprint.save(link_rule=WriteRules.WRITE)
-    if issue_update.end_date != None:
-        await Issue.validate_update(issue_update, issue.creation_date, issue.sprint_id)
-    await issue.update({"$set": issue_update.model_dump(exclude="author,implementers")})
+    await issue.save()
+    await issue.update({"$set": issue_update.model_dump(exclude="author,implementers", exclude_none=True)})
     await Comment.find(Comment.issue_id == issue_id).update(Set({Comment.sprint_id: issue.sprint_id}))
     return SuccessfulResponse()
 

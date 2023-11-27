@@ -8,7 +8,7 @@ from pydantic import Field
 
 from app.core.exceptions import ValidationError
 
-from .models import CommentCreation, IssueBase, SprintCreation, UserRegister, WorkplaceCreation, IssueCreation, IssueUpdate
+from .models import CommentCreation, IssueBase, SprintBase, UserRegister, WorkplaceCreation
 from .types import Role
 
 
@@ -69,7 +69,7 @@ class Workplace(Document, WorkplaceCreation):
         await Sprint.find(Sprint.workplace_id == self.id).delete()
 
 
-class Sprint(Document, SprintCreation):
+class Sprint(Document, SprintBase):
     id: UUID = Field(default_factory=uuid4)
     issues: List[Link["Issue"]] = Field(default_factory=list, exclude=True)
     workplace: BackLink["Workplace"] = Field(original_field="sprints", exclude=True)
@@ -82,7 +82,7 @@ class Sprint(Document, SprintCreation):
         await Comment.find(Comment.sprint_id == self.id).delete()
         await Issue.find(Issue.sprint_id == self.id).delete()
 
-    async def validate_creation(sprint_creation: SprintCreation, workplace_id: UUID, sprint_id: UUID = None):
+    async def validate_creation(sprint_creation: SprintBase, workplace_id: UUID, sprint_id: UUID = None):
         find_sprint = await Sprint.find_one(
             Sprint.workplace.id == workplace_id,
             Or(
@@ -105,8 +105,7 @@ class Sprint(Document, SprintCreation):
 
 class Issue(Document, IssueBase):
     id: UUID = Field(default_factory=uuid4)
-    creation_date: datetime
-    end_date: datetime
+    creation_date: datetime = Field(default_factory=datetime.now)
     author: Link["UserAssignedWorkplace"]
     implementers: List[Link["UserAssignedWorkplace"]] = Field(default_factory=list)
     comments: List[Link["Comment"]] = Field(default_factory=list)
@@ -125,24 +124,11 @@ class Issue(Document, IssueBase):
             return False
         id = other if isinstance(other, UUID) else other.id
         return self.id == id
-    
-    async def validate_creation(issue_creation: IssueCreation):
-        if issue_creation.creation_date > issue_creation.end_date:
-            raise ValidationError("Дата начала задачи не может быть позже даты конца")
-        
-        sprint = await Sprint.find_one(Sprint.id == issue_creation.sprint_id, fetch_links=True)
-        # Кто эти поганые даты писал??? почему у переменных одного и того же типа разный формат????
-        if issue_creation.end_date.timestamp() - sprint.end_date.timestamp() < 0:
-            raise ValidationError("Задача не влезает в спринт по времени")
-        
-    async def validate_update(issue_update: IssueUpdate, creation_date: datetime, sprint_id: UUID):
-        if creation_date.timestamp() - issue_update.end_date.timestamp() > 0:
-            raise ValidationError("Дата начала задачи не может быть позже даты конца")
-        
-        sprint = await Sprint.find_one(Sprint.id == sprint_id, fetch_links=True)
-        # Кто эти поганые даты писал??? почему у переменных одного и того же типа разный формат????
-        if issue_update.end_date.timestamp() - sprint.end_date.timestamp() < 0:
-            raise ValidationError("Задача не влезает в спринт по времени")
+
+    def validate_creation(self):
+        if self.end_date is not None:
+            if self.creation_date.timestamp() > self.end_date.timestamp():
+                raise ValidationError("Дата начала задачи не может быть позже даты конца")
 
 
 class Comment(Document, CommentCreation):
