@@ -7,7 +7,7 @@ from fastapi import APIRouter, Body, Depends, Path, status
 from app.auth.oauth2 import guest, member
 from app.core.exceptions import CommentNotFoundError, IssueNotFoundError
 from app.schemas.documents import Comment, Issue, UserAssignedWorkplace
-from app.schemas.models import CommentCreation, SuccessfulResponse
+from app.schemas.models import CommentCreation, CommentUpdate, SuccessfulResponse
 
 router = APIRouter(tags=["Comment"])
 
@@ -72,7 +72,7 @@ async def get_issue_comments(
     status_code=status.HTTP_200_OK,
 )
 async def edit_comment(
-    comment_creation: CommentCreation = Body(...),
+    comment_update: CommentUpdate = Body(...),
     workplace_id: UUID = Path(...),
     comment_id: UUID = Path(...),
     user: UserAssignedWorkplace = Depends(member),
@@ -80,7 +80,7 @@ async def edit_comment(
     comment = await Comment.find_one(Comment.id == comment_id, Comment.workplace_id == workplace_id, fetch_links=True)
     if comment is None:
         raise CommentNotFoundError("Такого комментария не найдено.")
-    await comment.update({"$set": comment_creation.model_dump()})
+    await comment.update({"$set": comment_update.model_dump(exclude_none=True)})
     return SuccessfulResponse()
 
 
