@@ -112,7 +112,7 @@ async def edit_issue(
         sprint.issues.append(issue)
         await sprint.save(link_rule=WriteRules.WRITE)
     await issue.save()
-    await issue.update({"$set": issue_update.model_dump(exclude="author,implementers", exclude_none=True)})
+    await issue.update({"$set": issue_update.model_dump(exclude="implementers", exclude_none=True)})
     await Comment.find(Comment.issue_id == issue_id).update(Set({Comment.sprint_id: issue.sprint_id}))
     return SuccessfulResponse()
 

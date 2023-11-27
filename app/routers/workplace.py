@@ -11,7 +11,7 @@ from app.config import client_api_settings
 from app.core.email import Email
 from app.core.redis_session import Redis
 from app.schemas.documents import Role, User, UserAssignedWorkplace, Workplace
-from app.schemas.models import InviteModel, SuccessfulResponse, WorkplaceCreation
+from app.schemas.models import InviteModel, SuccessfulResponse, WorkplaceCreation, WorkplaceUpdate
 
 router = APIRouter(tags=["Workplace"])
 
@@ -38,12 +38,12 @@ async def get_workplace(workplace_id: UUID = Path(...), user: UserAssignedWorkpl
 
 @router.put("/workplaces/{workplace_id}", response_model=SuccessfulResponse, status_code=status.HTTP_200_OK)
 async def edit_workplace(
-    workplace_creation: WorkplaceCreation = Body(...),
+    workplace_update: WorkplaceUpdate = Body(...),
     workplace_id: UUID = Path(...),
     user: UserAssignedWorkplace = Depends(admin),
 ):
     workplace = await Workplace.find_one(Workplace.id == workplace_id)
-    await workplace.update({"$set": workplace_creation.model_dump()})
+    await workplace.update({"$set": workplace_update.model_dump(exclude_none=True)})
     return SuccessfulResponse()
 
 

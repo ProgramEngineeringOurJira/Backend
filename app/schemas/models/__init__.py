@@ -1,8 +1,8 @@
 from .auth import SuccessfulResponse, Token, TokenData, TokenType, UserLogin, UserRegister
 from .comment import CommentCreation, CommentUpdate
 from .issue import IssueBase, IssueCreation, IssueUpdate
-from .sprint import SprintBase, SprintCreation
-from .workplace import FileModelOut, InviteModel, WorkplaceCreation
+from .sprint import SprintBase, SprintCreation, SprintUpdate
+from .workplace import FileModelOut, InviteModel, WorkplaceCreation, WorkplaceUpdate
 
 __all__ = [
     "UserRegister",
@@ -21,4 +21,6 @@ __all__ = [
     "InviteModel",
     "IssueUpdate",
     "SprintBase",
+    "SprintUpdate",
+    "WorkplaceUpdate",
 ]

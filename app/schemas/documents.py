@@ -82,13 +82,18 @@ class Sprint(Document, SprintBase):
         await Comment.find(Comment.sprint_id == self.id).delete()
         await Issue.find(Issue.sprint_id == self.id).delete()
 
-    async def validate_creation(sprint_creation: SprintBase, workplace_id: UUID, sprint_id: UUID = None):
+    def check_date_order(start_date: datetime, end_date: datetime):
+        if start_date.timestamp() > end_date.timestamp():
+            raise ValidationError("Дата окончания спринта должна быть позже даты начала.")
+
+    async def validate_dates(start_date: datetime, end_date: datetime, workplace_id: UUID, sprint_id: UUID = None):
+        Sprint.check_date_order(start_date, end_date)
         find_sprint = await Sprint.find_one(
             Sprint.workplace.id == workplace_id,
             Or(
-                And(Sprint.start_date >= sprint_creation.start_date, Sprint.start_date < sprint_creation.end_date),
-                And(Sprint.end_date > sprint_creation.start_date, Sprint.end_date <= sprint_creation.end_date),
-                And(Sprint.start_date <= sprint_creation.start_date, Sprint.end_date >= sprint_creation.end_date),
+                And(Sprint.start_date >= start_date, Sprint.start_date < end_date),
+                And(Sprint.end_date > start_date, Sprint.end_date <= end_date),
+                And(Sprint.start_date <= start_date, Sprint.end_date >= end_date),
             ),
             Sprint.id != sprint_id,
             fetch_links=True,
@@ -112,7 +117,6 @@ class Issue(Document, IssueBase):
     sprint: BackLink["Sprint"] = Field(default=None, original_field="issues", exclude=True)
     workplace_id: UUID = Field(exclude=True)
     sprint_id: UUID = Field(exclude=True)
-    files: List[str] = Field(default_factory=list)
 
     @before_event(Delete)
     async def delete_refs(self):
@@ -129,7 +133,7 @@ class Issue(Document, IssueBase):
     def validate_creation(self):
         if self.end_date is not None:
             if self.creation_date.timestamp() > self.end_date.timestamp():
-                raise ValidationError("Дата начала задачи не может быть позже даты конца")
+                raise ValidationError("Нельзя создать задачу задним числом")
 
 
 class Comment(Document, CommentCreation):
@@ -140,7 +144,6 @@ class Comment(Document, CommentCreation):
     workplace_id: UUID = Field(exclude=True)
     sprint_id: UUID = Field(exclude=True)
     issue_id: UUID = Field(exclude=True)
-    files: List[str] = Field(default_factory=list)
 
     @before_event(Delete)
     async def delete_refs(self):

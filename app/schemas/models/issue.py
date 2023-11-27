@@ -15,6 +15,7 @@ class IssueBase(BaseModel):
     label: Label
     end_date: Optional[datetime] = Field(default=None)
     sprint_id: UUID
+    files: List[str] = Field(default_factory=list)
 
 
 class IssueCreation(IssueBase):
@@ -28,5 +29,6 @@ class IssueUpdate(BaseModel):
     state: Optional[State] = Field(default=None)
     label: Optional[Label] = Field(default=None)
     sprint_id: Optional[UUID] = Field(default=None)
-    implementers: Optional[List[UUID]] = Field(default=None)
     end_date: Optional[datetime] = Field(default=None)
+    implementers: Optional[List[UUID]] = Field(default=None)
+    files: Optional[List[str]] = Field(default_factory=None)
