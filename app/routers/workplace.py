@@ -5,14 +5,13 @@ from beanie import WriteRules
 from beanie.operators import RegEx
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, Path, Request, status
 from fastapi.responses import RedirectResponse
-from pydantic import EmailStr
 
 from app.auth.oauth2 import admin, get_current_user, guest
 from app.config import client_api_settings
 from app.core.email import Email
 from app.core.redis_session import Redis
 from app.schemas.documents import Role, User, UserAssignedWorkplace, Workplace
-from app.schemas.models import SuccessfulResponse, WorkplaceCreation
+from app.schemas.models import InviteModel, SuccessfulResponse, WorkplaceCreation, WorkplaceUpdate
 
 router = APIRouter(tags=["Workplace"])
 
@@ -39,12 +38,12 @@ async def get_workplace(workplace_id: UUID = Path(...), user: UserAssignedWorkpl
 
 @router.put("/workplaces/{workplace_id}", response_model=SuccessfulResponse, status_code=status.HTTP_200_OK)
 async def edit_workplace(
-    workplace_creation: WorkplaceCreation = Body(...),
+    workplace_update: WorkplaceUpdate = Body(...),
     workplace_id: UUID = Path(...),
     user: UserAssignedWorkplace = Depends(admin),
 ):
     workplace = await Workplace.find_one(Workplace.id == workplace_id)
-    await workplace.update({"$set": workplace_creation.model_dump()})
+    await workplace.update({"$set": workplace_update.model_dump(exclude_none=True)})
     return SuccessfulResponse()
 
 
@@ -103,8 +102,8 @@ async def add_to_workplace(
 async def invite_to_workplace(
     request: Request,
     background_tasks: BackgroundTasks,
+    new_user_email: InviteModel,
     email: Email = Depends(Email),
-    new_user_email: EmailStr = Body(...),
     workplace_id: UUID = Path(...),
     redis: Redis = Depends(Redis),
     user: UserAssignedWorkplace = Depends(admin),
@@ -112,7 +111,7 @@ async def invite_to_workplace(
     workplace = await Workplace.find_one(Workplace.id == workplace_id)
     invitation_id = str(uuid4())
     background_tasks.add_task(
-        email.send_invitation_mail, request, new_user_email, workplace_id, invitation_id, workplace.name
+        email.send_invitation_mail, request, new_user_email.email, workplace_id, invitation_id, workplace.name
     )
-    await redis.set_uuid_invite_email(invitation_id, new_user_email)
+    await redis.set_uuid_invite_email(invitation_id, new_user_email.email)
     return SuccessfulResponse()

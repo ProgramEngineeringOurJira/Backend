@@ -8,7 +8,7 @@ from pydantic import Field
 
 from app.core.exceptions import ValidationError
 
-from .models import CommentCreation, IssueBase, SprintCreation, UserRegister, WorkplaceCreation
+from .models import CommentCreation, IssueBase, SprintBase, UserRegister, WorkplaceCreation
 from .types import Role
 
 
@@ -69,7 +69,7 @@ class Workplace(Document, WorkplaceCreation):
         await Sprint.find(Sprint.workplace_id == self.id).delete()
 
 
-class Sprint(Document, SprintCreation):
+class Sprint(Document, SprintBase):
     id: UUID = Field(default_factory=uuid4)
     issues: List[Link["Issue"]] = Field(default_factory=list, exclude=True)
     workplace: BackLink["Workplace"] = Field(original_field="sprints", exclude=True)
@@ -82,13 +82,18 @@ class Sprint(Document, SprintCreation):
         await Comment.find(Comment.sprint_id == self.id).delete()
         await Issue.find(Issue.sprint_id == self.id).delete()
 
-    async def validate_creation(sprint_creation: SprintCreation, workplace_id: UUID, sprint_id: UUID = None):
+    def check_date_order(start_date: datetime, end_date: datetime):
+        if start_date.timestamp() > end_date.timestamp():
+            raise ValidationError("Дата окончания спринта должна быть позже даты начала.")
+
+    async def validate_dates(start_date: datetime, end_date: datetime, workplace_id: UUID, sprint_id: UUID = None):
+        Sprint.check_date_order(start_date, end_date)
         find_sprint = await Sprint.find_one(
             Sprint.workplace.id == workplace_id,
             Or(
-                And(Sprint.start_date >= sprint_creation.start_date, Sprint.start_date < sprint_creation.end_date),
-                And(Sprint.end_date > sprint_creation.start_date, Sprint.end_date <= sprint_creation.end_date),
-                And(Sprint.start_date <= sprint_creation.start_date, Sprint.end_date >= sprint_creation.end_date),
+                And(Sprint.start_date >= start_date, Sprint.start_date < end_date),
+                And(Sprint.end_date > start_date, Sprint.end_date <= end_date),
+                And(Sprint.start_date <= start_date, Sprint.end_date >= end_date),
             ),
             Sprint.id != sprint_id,
             fetch_links=True,
@@ -106,7 +111,6 @@ class Sprint(Document, SprintCreation):
 class Issue(Document, IssueBase):
     id: UUID = Field(default_factory=uuid4)
     creation_date: datetime = Field(default_factory=datetime.now)
-    end_date: datetime = Field(default_factory=datetime.now)
     author: Link["UserAssignedWorkplace"]
     implementers: List[Link["UserAssignedWorkplace"]] = Field(default_factory=list)
     comments: List[Link["Comment"]] = Field(default_factory=list)
@@ -125,6 +129,11 @@ class Issue(Document, IssueBase):
             return False
         id = other if isinstance(other, UUID) else other.id
         return self.id == id
+
+    def validate_creation(self):
+        if self.end_date is not None:
+            if self.creation_date.timestamp() > self.end_date.timestamp():
+                raise ValidationError("Нельзя создать задачу задним числом")
 
 
 class Comment(Document, CommentCreation):

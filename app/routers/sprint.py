@@ -2,13 +2,12 @@ from typing import List
 from uuid import UUID
 
 from beanie import WriteRules
-from beanie.operators import Set
 from fastapi import APIRouter, Body, Depends, Path, status
 
 from app.auth.oauth2 import admin, guest
 from app.core.exceptions import SprintNotFoundError
-from app.schemas.documents import Issue, Sprint, SprintCreation, UserAssignedWorkplace, Workplace
-from app.schemas.models import SuccessfulResponse
+from app.schemas.documents import Sprint, UserAssignedWorkplace, Workplace
+from app.schemas.models import SprintCreation, SprintUpdate, SuccessfulResponse
 from app.schemas.models.responses import Column, SprintResponse
 
 router = APIRouter(tags=["Sprint"])
@@ -20,7 +19,7 @@ async def create_sprint(
     workplace_id: UUID = Path(...),
     user: UserAssignedWorkplace = Depends(admin),
 ):
-    await Sprint.validate_creation(sprint_creation, workplace_id)
+    await Sprint.validate_dates(sprint_creation.start_date, sprint_creation.end_date, workplace_id)
     workplace = await Workplace.find_one(Workplace.id == workplace_id, fetch_links=True)
     workplace.sprints.append(Sprint(**sprint_creation.model_dump(), workplace_id=workplace.id))
     await workplace.save(link_rule=WriteRules.WRITE)
@@ -59,7 +58,7 @@ async def get_sprints(
 
 @router.put("/{workplace_id}/sprints/{sprint_id}", response_model=SuccessfulResponse, status_code=status.HTTP_200_OK)
 async def edit_sprint(
-    sprint_creation: SprintCreation = Body(...),
+    sprint_update: SprintUpdate = Body(...),
     workplace_id: UUID = Path(...),
     sprint_id: UUID = Path(...),
     user: UserAssignedWorkplace = Depends(admin),
@@ -67,9 +66,10 @@ async def edit_sprint(
     sprint = await Sprint.find_one(Sprint.workplace_id == workplace_id, Sprint.id == sprint_id)
     if sprint is None:
         raise SprintNotFoundError("Такого спринта не найдено.")
-    await Sprint.validate_creation(sprint_creation, workplace_id, sprint_id)
-    await sprint.update({"$set": sprint_creation.model_dump()})
-    await Issue.find(Issue.sprint_id == sprint_id).update(Set({Issue.end_date: sprint_creation.end_date}))
+    start_date = sprint.start_date if sprint_update.start_date is None else sprint_update.start_date
+    end_date = sprint.end_date if sprint_update.end_date is None else sprint_update.end_date
+    await Sprint.validate_dates(start_date, end_date, workplace_id, sprint_id)
+    await sprint.update({"$set": sprint_update.model_dump(exclude_none=True)})
     return SuccessfulResponse()
 
 
