@@ -2,7 +2,7 @@ from typing import List
 from uuid import UUID, uuid4
 
 from beanie import WriteRules
-from beanie.operators import In, RegEx
+from beanie.operators import RegEx
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, Path, Request, status
 from fastapi.responses import RedirectResponse
 from pydantic import EmailStr
@@ -75,11 +75,10 @@ async def get_users(
 @router.get(
     "/workplaces", response_model=List[Workplace], response_model_by_alias=False, status_code=status.HTTP_200_OK
 )
-async def get_user_workplaces(user: UserAssignedWorkplace = Depends(get_current_user)):
+async def get_user_workplaces(user: User = Depends(get_current_user)):
     workplaces = await Workplace.find(fetch_links=True).to_list()
-    # TODO убрать эту херню и сделать номарльно
-    ids = [w.id for w in workplaces for u in w.users if u.user.id == user.id]
-    workplaces = await Workplace.find(In(Workplace.id, ids), fetch_links=True).to_list()
+    # TODO убрать эту херню и сделать номарльно. Андрей что-то говорит про подумать.
+    workplaces = [w for w in workplaces for u in w.users if u.user.id == user.id]
     return workplaces
 
 
