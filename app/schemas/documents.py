@@ -112,6 +112,7 @@ class Issue(Document, IssueBase):
     sprint: BackLink["Sprint"] = Field(default=None, original_field="issues", exclude=True)
     workplace_id: UUID = Field(exclude=True)
     sprint_id: UUID = Field(exclude=True)
+    files: List[str] = Field(default_factory=list)
 
     @before_event(Delete)
     async def delete_refs(self):
@@ -139,6 +140,7 @@ class Comment(Document, CommentCreation):
     workplace_id: UUID = Field(exclude=True)
     sprint_id: UUID = Field(exclude=True)
     issue_id: UUID = Field(exclude=True)
+    files: List[str] = Field(default_factory=list)
 
     @before_event(Delete)
     async def delete_refs(self):
