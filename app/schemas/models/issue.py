@@ -31,4 +31,4 @@ class IssueUpdate(BaseModel):
     sprint_id: Optional[UUID] = Field(default=None)
     end_date: Optional[datetime] = Field(default=None)
     implementers: Optional[List[UUID]] = Field(default=None)
-    files: Optional[List[str]] = Field(default_factory=None)
+    files: Optional[List[str]] = Field(default=None)
