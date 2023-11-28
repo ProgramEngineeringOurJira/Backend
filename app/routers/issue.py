@@ -82,7 +82,7 @@ async def get_workplace_issues(workplace_id: UUID = Path(...), user: UserAssigne
     return issues
 
 
-@router.put("/{workplace_id}/issues{issue_id}", response_model=SuccessfulResponse, status_code=status.HTTP_200_OK)
+@router.put("/{workplace_id}/issues/{issue_id}", response_model=SuccessfulResponse, status_code=status.HTTP_200_OK)
 async def edit_issue(
     issue_update: IssueUpdate = Body(...),
     workplace_id: UUID = Path(...),
