@@ -7,13 +7,13 @@ from fastapi import APIRouter, Body, Depends, Path, status
 from app.auth.oauth2 import admin, guest
 from app.core.exceptions import SprintNotFoundError
 from app.schemas.documents import Sprint, UserAssignedWorkplace, Workplace
-from app.schemas.models import SprintCreation, SprintUpdate, SuccessfulResponse
+from app.schemas.models import CreationResponse, SprintCreation, SprintUpdate, SuccessfulResponse
 from app.schemas.models.responses import Column, SprintResponse
 
 router = APIRouter(tags=["Sprint"])
 
 
-@router.post("/{workplace_id}/sprints", response_model=SuccessfulResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/{workplace_id}/sprints", response_model=CreationResponse, status_code=status.HTTP_201_CREATED)
 async def create_sprint(
     sprint_creation: SprintCreation = Body(...),
     workplace_id: UUID = Path(...),
@@ -21,9 +21,10 @@ async def create_sprint(
 ):
     await Sprint.validate_dates(sprint_creation.start_date, sprint_creation.end_date, workplace_id)
     workplace = await Workplace.find_one(Workplace.id == workplace_id, fetch_links=True)
-    workplace.sprints.append(Sprint(**sprint_creation.model_dump(), workplace_id=workplace.id))
+    sprint = Sprint(**sprint_creation.model_dump(), workplace_id=workplace.id)
+    workplace.sprints.append(sprint)
     await workplace.save(link_rule=WriteRules.WRITE)
-    return SuccessfulResponse()
+    return CreationResponse(id=sprint.id)
 
 
 @router.get(

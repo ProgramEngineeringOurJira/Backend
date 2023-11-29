@@ -11,17 +11,17 @@ from app.config import client_api_settings
 from app.core.email import Email
 from app.core.redis_session import Redis
 from app.schemas.documents import Role, User, UserAssignedWorkplace, Workplace
-from app.schemas.models import InviteModel, SuccessfulResponse, WorkplaceCreation, WorkplaceUpdate
+from app.schemas.models import CreationResponse, InviteModel, SuccessfulResponse, WorkplaceCreation, WorkplaceUpdate
 
 router = APIRouter(tags=["Workplace"])
 
 
-@router.post("/workplace", response_model=SuccessfulResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/workplace", response_model=CreationResponse, status_code=status.HTTP_201_CREATED)
 async def create_workplace(workplace_creation: WorkplaceCreation = Body(...), user: User = Depends(get_current_user)):
     workplace = Workplace(**workplace_creation.model_dump())
     workplace.users = [UserAssignedWorkplace(user=user, workplace_id=workplace.id, role=Role.ADMIN)]
     await workplace.save(link_rule=WriteRules.WRITE)
-    return SuccessfulResponse()
+    return CreationResponse(id=workplace.id)
 
 
 @router.get(
@@ -94,7 +94,6 @@ async def add_to_workplace(
     workplace = await Workplace.find_one(Workplace.id == workplace_id)
     workplace.users.append(UserAssignedWorkplace(user=user, workplace_id=workplace.id, role=Role.MEMBER))
     await workplace.save(link_rule=WriteRules.WRITE)
-
     return RedirectResponse(client_api_settings.WORKPLACE_URL)
 
 
