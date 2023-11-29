@@ -10,12 +10,12 @@ from fastapi import APIRouter, Body, Depends, Path, status
 from app.auth.oauth2 import guest, member
 from app.core.exceptions import IssueNotFoundError, SprintNotFoundError, UserNotFoundError, ValidationError
 from app.schemas.documents import Comment, Issue, Sprint, UserAssignedWorkplace
-from app.schemas.models import IssueCreation, IssueUpdate, SuccessfulResponse
+from app.schemas.models import CreationResponse, IssueCreation, IssueUpdate, SuccessfulResponse
 
 router = APIRouter(tags=["Issue"])
 
 
-@router.post("/{workplace_id}/issues", response_model=SuccessfulResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/{workplace_id}/issues", response_model=CreationResponse, status_code=status.HTTP_201_CREATED)
 async def create_issue(
     issue_creation: IssueCreation = Body(...),
     workplace_id: UUID = Path(...),
@@ -41,7 +41,7 @@ async def create_issue(
     issue.validate_creation()
     sprint.issues.append(issue)
     await sprint.save(link_rule=WriteRules.WRITE)
-    return SuccessfulResponse()
+    return CreationResponse(id=issue.id)
 
 
 @router.get(

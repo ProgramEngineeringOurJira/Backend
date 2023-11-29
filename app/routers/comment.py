@@ -7,13 +7,13 @@ from fastapi import APIRouter, Body, Depends, Path, status
 from app.auth.oauth2 import guest, member
 from app.core.exceptions import CommentNotFoundError, IssueNotFoundError
 from app.schemas.documents import Comment, Issue, UserAssignedWorkplace
-from app.schemas.models import CommentCreation, CommentUpdate, SuccessfulResponse
+from app.schemas.models import CommentCreation, CommentUpdate, CreationResponse, SuccessfulResponse
 
 router = APIRouter(tags=["Comment"])
 
 
 @router.post(
-    "/{workplace_id}/issues/{issue_id}/comments", response_model=SuccessfulResponse, status_code=status.HTTP_201_CREATED
+    "/{workplace_id}/issues/{issue_id}/comments", response_model=CreationResponse, status_code=status.HTTP_201_CREATED
 )
 async def create_comment(
     comment_creation: CommentCreation = Body(...),
@@ -33,7 +33,7 @@ async def create_comment(
     )
     issue.comments.append(comment)
     await issue.save(link_rule=WriteRules.WRITE)
-    return SuccessfulResponse()
+    return CreationResponse(id=comment.id)
 
 
 @router.get(
