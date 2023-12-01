@@ -10,8 +10,9 @@ from app.auth.oauth2 import get_current_user
 from app.config import client_api_settings
 from app.core.avatar import create_avatar
 from app.core.email import Email
-from app.core.exceptions import AvatarNotFoundException, EmailVerificationException, UserFoundException
+from app.core.exceptions import EmailVerificationException, UserFoundException
 from app.core.redis_session import Redis
+from app.core.storage import get_avatar_storage
 from app.schemas.documents import User
 from app.schemas.models import SuccessfulResponse
 from app.schemas.models.auth import Token, TokenData, UserLogin, UserRegister
@@ -61,15 +62,12 @@ async def verify_email(token: str, redis: Redis = Depends(Redis)):
     check = await redis.get_user(uuid=token)
     if check is None:
         raise EmailVerificationException("Произошла ошибка! Истекло время или неправильный код")
-
     user_data = json.loads(check)
     hashed = get_password_hash(user_data["password"])
-
     user = User(email=user_data["email"], password=hashed, name=user_data["name"])
     await create_avatar(str(user.id))
-
+    user.avatar_url = "/file/" + str(user.id) + ".png"
     await user.create()
-
     return RedirectResponse(client_api_settings.MAIN_URL)
 
 
@@ -80,11 +78,8 @@ async def get_user_profile(user: User = Depends(get_current_user)):
 
 @router.get("/profile/avatar", response_class=FileResponse, status_code=status.HTTP_200_OK)
 async def get_user_avatar(user: User = Depends(get_current_user)):
-    storage = pathlib.Path(__file__).parent.parent.parent.resolve()
-    avatar_folder = storage.joinpath(pathlib.Path("assets/avatars"))
+    avatar_folder = get_avatar_storage()
     avatar_path = avatar_folder.joinpath(pathlib.Path(str(user.id) + ".png"))
-
     if not pathlib.Path.is_file(avatar_path):
-        raise AvatarNotFoundException("Аватарка не найдена")
-
+        await create_avatar(str(user.id))
     return FileResponse(avatar_path)

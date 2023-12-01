@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 from uuid import UUID, uuid4
 
 from beanie import BackLink, Delete, Document, Indexed, Link, WriteRules, before_event
@@ -17,6 +17,7 @@ class User(Document, UserRegister):
     email: Indexed(str, unique=True)
     password: str = Field(exclude=True)
     name: str = Field()
+    avatar_url: str = Field(default_factory=str)
 
     @property
     def created(self) -> datetime:
