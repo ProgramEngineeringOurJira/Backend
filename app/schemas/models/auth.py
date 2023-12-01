@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import StrEnum
 from typing import Optional
+from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -33,3 +34,7 @@ class UserLogin(BaseModel):
 
 class SuccessfulResponse(BaseModel):
     details: str = Field("Выполнено", title="Статус операции")
+
+
+class CreationResponse(SuccessfulResponse):
+    id: UUID

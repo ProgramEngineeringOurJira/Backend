@@ -9,5 +9,5 @@ class CommentCreation(BaseModel):
 
 
 class CommentUpdate(BaseModel):
-    text: Optional[str]
-    files: Optional[List[str]]
+    text: Optional[str] = Field(default=None)
+    files: Optional[List[str]] = Field(default=None)
