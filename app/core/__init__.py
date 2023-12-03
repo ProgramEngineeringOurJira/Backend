@@ -1,5 +1,4 @@
 from .exceptions import (
-    AvatarNotFoundException,
     AvatarSizeNotCorrectException,
     BadRequest,
     CommentNotFoundError,
@@ -36,6 +35,5 @@ __all__ = [
     "EmailVerificationException",
     "CommentNotFoundError",
     "WorkplaceFileNotFoundException",
-    "AvatarNotFoundException",
     "AvatarSizeNotCorrectException",
 ]
