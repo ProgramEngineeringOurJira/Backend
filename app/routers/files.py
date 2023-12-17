@@ -27,9 +27,7 @@ async def add_file(
 
 
 @router.get("/workplaces/{workplace_id}/file/{filename}", status_code=status.HTTP_200_OK, response_class=FileResponse)
-async def get_file(
-    workplace_id: UUID = Path(...), filename: str = Path(...), user: UserAssignedWorkplace = Depends(member)
-):
+async def get_file(workplace_id: UUID = Path(...), filename: str = Path(...)):
     local_storage = get_workplace_storage()
     path_file = local_storage.joinpath(pathlib.Path(f"{workplace_id}/{filename}"))
     if not pathlib.Path.is_file(path_file):
