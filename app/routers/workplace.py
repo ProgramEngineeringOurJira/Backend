@@ -10,6 +10,7 @@ from pydantic import EmailStr
 from app.auth.oauth2 import admin, get_current_user, guest
 from app.config import client_api_settings
 from app.core.email import Email
+from app.core.exceptions import UserNotFoundError
 from app.core.redis_session import Redis
 from app.schemas.documents import Role, User, UserAssignedWorkplace, Workplace
 from app.schemas.models import SuccessfulResponse, WorkplaceCreation
@@ -89,10 +90,6 @@ async def add_to_workplace(
 ):
     new_user_email = await redis.get_invite_user_email(uuid=str(invitation_id))
     user = await User.by_email(new_user_email)
-    # Если пользователь не вошёл или не зарегистрировался
-    if not user:
-        return RedirectResponse(client_api_settings.LOGIN_URL)
-    # Если всё хорошо
     workplace = await Workplace.find_one(Workplace.id == workplace_id)
     workplace.users.append(UserAssignedWorkplace(user=user, workplace_id=workplace.id, role=Role.MEMBER))
     await workplace.save(link_rule=WriteRules.WRITE)
@@ -110,6 +107,10 @@ async def invite_to_workplace(
     redis: Redis = Depends(Redis),
     user: UserAssignedWorkplace = Depends(admin),
 ):
+    user = await User.by_email(new_user_email)
+    # Если пользователь не вошёл или не зарегистрировался
+    if not user:
+        raise UserNotFoundError("Данный пользователь не зарегистрирован")
     workplace = await Workplace.find_one(Workplace.id == workplace_id)
     invitation_id = str(uuid4())
     background_tasks.add_task(
