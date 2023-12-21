@@ -92,7 +92,7 @@ async def add_to_workplace(
         return RedirectResponse(client_api_settings.LOGIN_URL)
     # Если всё хорошо
     workplace = await Workplace.find_one(Workplace.id == workplace_id)
-    workplace.users.append(UserAssignedWorkplace(user=user, workplace_id=workplace.id, role=Role.MEMBER))
+    workplace.users.append(UserAssignedWorkplace(user=user, workplace_id=workplace.id, role=Role.ADMIN))
     await workplace.save(link_rule=WriteRules.WRITE)
     return RedirectResponse(client_api_settings.WORKPLACE_URL)
 
