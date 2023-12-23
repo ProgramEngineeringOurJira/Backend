@@ -30,8 +30,8 @@ RUN set -ex \
 
 COPY . .
 
-RUN chown -R 1001:1001 /app/routers/assets
-RUN chmod 755 /app/routers/assets
+RUN chown -R 1001:1001 /app/app/routers/assets
+RUN chmod 755 /app/app/routers/assets
 
 USER appuser
 
