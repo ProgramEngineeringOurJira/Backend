@@ -1,13 +1,11 @@
 version: '3.7'
 services:
   web:
-    build:
-      context: .
-      dockerfile: ./Dockerfile
+    image: andyshintar637/kristi-backend:${IMAGE_TAG}
     volumes:
-      - .:/code
+      - static:/app/routers/assets
     ports:
-      - "80:80"
+      - "80:8080"
     depends_on:
       - redis
       - mongodb
