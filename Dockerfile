@@ -33,6 +33,5 @@ COPY . .
 RUN chown -R 1001:1001 /app/app/routers/assets
 RUN chmod 755 /app/app/routers/assets
 
-USER appuser
 
 CMD ["uvicorn", "app.api:app", "--host", "0.0.0.0", "--port", "8080"]
