@@ -39,5 +39,4 @@ class Redis:
 
     async def get_invite_user_email(self, uuid: str):
         email = await self.con.get(uuid)
-        await self.con.delete(uuid)
         return email
